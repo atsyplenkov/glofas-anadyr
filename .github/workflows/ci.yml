@@ -1,0 +1,26 @@
+name: Run Snakemake Workflow
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Set up Apptainer
+        uses: eWaterCycle/setup-apptainer@v2
+        
+      - name: Run Snakemake workflow
+        uses: snakemake/snakemake-github-action@v2
+        with:
+          directory: '.'
+          snakefile: 'Snakefile'
+          args: '--use-singularity --cores 1'

@@ -1,0 +1,37 @@
+Bootstrap: docker
+From: rocker/r-ver:4.5.1
+
+%labels
+    Author Anatoly Tsyplenkov <sharp.couch9400@fastmail.com>
+    Version v0.0.2
+
+%files
+    renv.lock /renv.lock
+
+%environment
+    export LC_ALL=C
+    export RENV_PATHS_LIBRARY="/renvlib"
+    export RENV_PATHS_LOCKFILE="/renv.lock"
+    export R_LIBS_USER="/renvlib"
+    export R_PROFILE_USER="/.Rprofile"
+
+%post
+    # The following code restores the `renv` library in `/renvlib` directory
+    # in the container, but it's not activating `renv`!
+    # This is because `renv` activation might be expensive in large projects,
+    # and frankly, it's not really needed in a containerised environment
+
+    # Create renv library directory
+    mkdir -p /renvlib
+    
+    # Set up R configuration
+    # Mind the CRAN repo! You might want to change it to one closer to you.
+    echo "options(renv.config.pak.enabled = TRUE, repos = c(CRAN = 'https://cran.csiro.au/'), download.file.method = 'libcurl', Ncpus = 4)" > /.Rprofile
+    echo ".libPaths(c('/renvlib', .libPaths()))" >> /.Rprofile
+    
+    # Install renv and pak
+    R --quiet -e 'install.packages("renv")'
+    R --quiet -e 'install.packages("pak")'
+    
+    # Restore packages using renv
+    R --quiet -e 'renv::restore(lockfile = "/renv.lock", library = "/renvlib")'
