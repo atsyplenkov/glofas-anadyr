@@ -11,6 +11,8 @@ if not ecmwf_token:
 dataset = "cems-glofas-historical"
 anadyr_bb_glofas = [66.47, 167.59, 64.04, 174.82]
 
+os.makedirs("data/glofas", exist_ok=True)
+
 def create_request(hyear: str) -> dict:
     return {
         "system_version": ["version_4_0"],
@@ -36,5 +38,9 @@ batch_requests = [
 ]
 
 for hyear, target in batch_requests:
-    request = create_request(hyear)
-    client.retrieve(dataset, request, target)
+    if not os.path.exists(target):
+        print(f"Downloading {target}...")
+        request = create_request(hyear)
+        client.retrieve(dataset, request, target)
+    else:
+        print(f"Skipping {target} (already exists)")

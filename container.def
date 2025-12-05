@@ -3,10 +3,13 @@ From: rocker/r-ver:4.5.1
 
 %labels
     Author Anatoly Tsyplenkov <sharp.couch9400@fastmail.com>
-    Version v0.0.2
+    Version v1.0
 
 %files
     renv.lock /renv.lock
+    pyproject.toml /pyproject.toml
+    uv.lock /uv.lock
+    .env /.env
 
 %environment
     export LC_ALL=C
@@ -14,6 +17,7 @@ From: rocker/r-ver:4.5.1
     export RENV_PATHS_LOCKFILE="/renv.lock"
     export R_LIBS_USER="/renvlib"
     export R_PROFILE_USER="/.Rprofile"
+    export PATH="/usr/local/bin:/uvenv/.venv/bin:$PATH"
 
 %post
     # The following code restores the `renv` library in `/renvlib` directory
@@ -26,12 +30,31 @@ From: rocker/r-ver:4.5.1
     
     # Set up R configuration
     # Mind the CRAN repo! You might want to change it to one closer to you.
-    echo "options(renv.config.pak.enabled = TRUE, repos = c(CRAN = 'https://cran.csiro.au/'), download.file.method = 'libcurl', Ncpus = 4)" > /.Rprofile
+    echo "options(repos = c(CRAN = 'https://mirror.truenetwork.ru/CRAN/'), download.file.method = 'libcurl', Ncpus = 4)" > /.Rprofile
     echo ".libPaths(c('/renvlib', .libPaths()))" >> /.Rprofile
     
     # Install renv and pak
     R --quiet -e 'install.packages("renv")'
-    R --quiet -e 'install.packages("pak")'
     
     # Restore packages using renv
     R --quiet -e 'renv::restore(lockfile = "/renv.lock", library = "/renvlib")'
+    
+    # Install curl and ca-certificates (required for uv installer)
+    apt-get update && apt-get install -y --no-install-recommends curl ca-certificates && rm -rf /var/lib/apt/lists/*
+    
+    # Install uv for Python dependency management
+    # Use the official installer script (installs to /root/.local/bin)
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    # Move uv binaries to /usr/local/bin for system-wide access
+    mv /root/.local/bin/uv /root/.local/bin/uvx /usr/local/bin/
+    chmod +x /usr/local/bin/uv /usr/local/bin/uvx
+    
+    # Set up Python environment using uv
+    mkdir -p /uvenv
+    cd /uvenv
+    cp /pyproject.toml .
+    cp /uv.lock .
+    uv sync --frozen --no-dev
+    
+    # Copy .env to uvenv directory for easy access
+    cp /.env /uvenv/.env

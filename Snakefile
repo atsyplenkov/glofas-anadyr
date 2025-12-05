@@ -5,6 +5,11 @@ CONTAINER = "container.sif"
 rule all:
     input:
         CONTAINER,
+        "data/glofas/2020.nc",
+        "data/glofas/2021.nc",
+        "data/glofas/2022.nc",
+        "data/glofas/2023.nc",
+        "data/glofas/2024.nc",
         "out/cyl.csv",
         "out/paths.txt",
         "out/plot.png"
@@ -13,12 +18,33 @@ rule all:
 rule apptainer_build:
     input:  
         def_file = "container.def",
-        lock_file = "renv.lock"
+        lock_file = "renv.lock",
+        pyproject = "pyproject.toml",
+        uv_lock = "uv.lock",
+        env_file = ".env"
     output:
         CONTAINER
     shell:
         """
         apptainer build {output} {input.def_file}
+        """
+
+# Download GLOFAS data -----------------------------------------------------------
+rule download_glofas:
+    input:
+        container = CONTAINER,
+        script = "scripts/download_glofas.py"
+    singularity:
+        CONTAINER
+    output:
+        "data/glofas/2020.nc",
+        "data/glofas/2021.nc",
+        "data/glofas/2022.nc",
+        "data/glofas/2023.nc",
+        "data/glofas/2024.nc"
+    shell:
+        """
+        python {input.script}
         """
 
 # Run scripts -----------------------------------------------------------
