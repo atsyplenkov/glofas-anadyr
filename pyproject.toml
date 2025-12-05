@@ -1,0 +1,6 @@
+[project]
+name = "glofas-anadyr"
+version = "0.1.0"
+description = "GloFAS data download script"
+requires-python = "==3.12.*"
+dependencies = ["cdsapi == 0.7.7", "python-dotenv>=1.0.0"]
