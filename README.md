@@ -1,4 +1,4 @@
-# Snakemake R Workflow with Apptainer and renv
+# Reconstructing daily streamflow data for Anadyr River using GloFAS-ERA5 reanalysis
 
 <p align="center">
      <a href="https://github.com/atsyplenkov/glofas-anadyr/.github/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/atsyplenkov/glofas-anadyr/ci.yml?style=flat&labelColor=1C2C2E&color=039475&logo=GitHub%20Actions&logoColor=white&label=CI"></a>
