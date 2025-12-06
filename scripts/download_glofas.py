@@ -30,11 +30,8 @@ def create_request(hyear: str) -> dict:
 client = cdsapi.Client(url="https://ewds.climate.copernicus.eu/api", key=ecmwf_token)
 
 batch_requests = [
-    ("2020", "data/glofas/2020.nc"),
-    ("2021", "data/glofas/2021.nc"),
-    ("2022", "data/glofas/2022.nc"),
-    ("2023", "data/glofas/2023.nc"),
-    ("2024", "data/glofas/2024.nc"),
+    (str(year), f"data/glofas/{year}.nc")
+    for year in range(1979, 2026)
 ]
 
 for hyear, target in batch_requests:

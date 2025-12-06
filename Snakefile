@@ -1,18 +1,15 @@
 # Variable declarations -------------------------------------------------------
 CONTAINER = "container.sif"
 
+# Get all GLOFAS files dynamically
+import glob
+YEARS = 1979:2025
+GLOFAS_FILES = [f"data/glofas/{year}.nc" for year in YEARS]
+
 # Inputs -----------------------------------------------------------
 rule all:
     input:
-        CONTAINER,
-        "data/glofas/2020.nc",
-        "data/glofas/2021.nc",
-        "data/glofas/2022.nc",
-        "data/glofas/2023.nc",
-        "data/glofas/2024.nc",
-        "out/cyl.csv",
-        "out/paths.txt",
-        "out/plot.png"
+        CONTAINER
 
 # Build compute environment -----------------------------------------------------------
 rule apptainer_build:
@@ -37,35 +34,8 @@ rule download_glofas:
     singularity:
         CONTAINER
     output:
-        "data/glofas/2020.nc",
-        "data/glofas/2021.nc",
-        "data/glofas/2022.nc",
-        "data/glofas/2023.nc",
-        "data/glofas/2024.nc"
+        GLOFAS_FILES
     shell:
         """
         python {input.script}
         """
-
-# Run scripts -----------------------------------------------------------
-rule run_test_script:
-    input:  
-        file = "in/mtcars.csv",
-        container = CONTAINER
-    singularity:
-        CONTAINER
-    output:
-        "out/cyl.csv",
-        "out/paths.txt"
-    script:
-        "scripts/test_script.R"
-
-rule run_test_script2:
-    input:  
-        CONTAINER
-    singularity:
-        CONTAINER
-    output:
-        "out/plot.png"
-    script:
-        "scripts/test_script2.R"
