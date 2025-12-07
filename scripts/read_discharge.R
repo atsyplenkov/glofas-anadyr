@@ -98,7 +98,7 @@ streamflow_data <-
   collapse::unlist2d(idcols = FALSE)
 
 # Save to CSV -----------------------------------------------------------
-Q_DIR <- "data/hydro"
+Q_DIR <- "data/hydro/obs"
 fs::dir_create(Q_DIR)
 
 anadyr_list <-
