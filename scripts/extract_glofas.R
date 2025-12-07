@@ -1,6 +1,7 @@
 library(sf)
 library(dplyr)
 library(lubridate)
+library(pbmcapply)
 
 source("src/utils_glofas.R")
 source("src/utils.R")
@@ -24,12 +25,11 @@ gauges <-
 
 # Load GloFAS ------------------------------------------------------------
 glofas_dir <-
-  fs::dir_ls("data/glofas/", regexp = ".nc$") |>
-  head()
+  fs::dir_ls("data/glofas/", regexp = ".nc$")
 
 # Read all GloFAS NetCDFs
 glofas_ls <-
-  lapply(
+  pbmcapply::pbmclapply(
     glofas_dir,
     FUN = \(i) {
       suppressMessages(
@@ -39,7 +39,8 @@ glofas_ls <-
           make_units = FALSE
         )
       )
-    }
+    },
+    mc.cores = 12L
   )
 
 # Add names
@@ -50,10 +51,11 @@ names(glofas_ls) <-
 
 # Extract water discharge at POI
 glofas_df <-
-  lapply(
+  pbmcapply::pbmclapply(
     glofas_ls,
     extract_glofas,
-    y = gauges
+    y = gauges,
+    mc.cores = 12L
   ) |>
   collapse::unlist2d(idcols = FALSE) |>
   dplyr::arrange(datetime) |>
