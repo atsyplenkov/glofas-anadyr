@@ -1,3 +1,6 @@
+# FIXME:
+# The whole file is incomplete
+
 # Variable declarations -------------------------------------------------------
 CONTAINER = "container.sif"
 
@@ -26,7 +29,7 @@ rule apptainer_build:
         apptainer build {output} {input.def_file}
         """
 
-# Download GLOFAS data -----------------------------------------------------------
+# Download GLOFAS data ------------------------------------------------
 rule download_glofas:
     input:
         container = CONTAINER,
@@ -39,3 +42,15 @@ rule download_glofas:
         """
         python {input.script}
         """
+
+# Read water discharge data ----------------------------------------------------
+rule read_streamflow:
+    input:  
+        file = "data/raw/Анадырь-расходы1223.xlsx",
+        container = CONTAINER
+    singularity:
+        CONTAINER
+    output:
+        Q_DIR
+    script:
+        "scripts/read_discharge.R"
