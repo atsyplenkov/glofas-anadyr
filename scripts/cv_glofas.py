@@ -1,10 +1,10 @@
-import hydroeval as he
 import numpy as np
 import pandas as pd
 import xarray as xr
 from pathlib import Path
 from xsdba import DetrendedQuantileMapping
 from concurrent.futures import ProcessPoolExecutor, as_completed
+import hydroeval as he
 
 
 def read_station_data(station_id, obs_dir, sim_dir):
@@ -39,7 +39,7 @@ def read_station_data(station_id, obs_dir, sim_dir):
     return merged
 
 
-def sliding_window_splits(data, lookback=6, assess_stop=2, step=1):
+def sliding_window_splits(data, lookback=7, assess_stop=2, step=1):
     """Generate sliding window splits for cross-validation."""
     years = sorted(data["year"].unique())
     years = [y for y in years if y != 1979]
@@ -138,8 +138,6 @@ def process_station(station_id, obs_dir, sim_dir, output_dir, quantiles_list):
         train_df = split["train"]
         test_df = split["test"]
         
-        train_obs = train_df["obs"].values
-        train_sim = train_df["sim"].values
         test_obs = test_df["obs"].values
         test_sim = test_df["sim"].values
         
@@ -147,7 +145,7 @@ def process_station(station_id, obs_dir, sim_dir, output_dir, quantiles_list):
         if raw_metrics:
             raw_metrics.update({
                 "type": "Raw",
-                "N_quantiles": "raw",
+                "nq": "raw",
                 "train_start": split["train_start"],
                 "train_end": split["train_end"],
                 "test_start": split["test_start"],
@@ -165,7 +163,7 @@ def process_station(station_id, obs_dir, sim_dir, output_dir, quantiles_list):
                     train_obs_da,
                     train_sim_da,
                     nquantiles=nq,
-                    group="time.dayofyear",
+                    group="time",
                     kind="+",
                 )
                 
@@ -181,7 +179,7 @@ def process_station(station_id, obs_dir, sim_dir, output_dir, quantiles_list):
                     if dqm_metrics:
                         dqm_metrics.update({
                             "type": "DQM",
-                            "N_quantiles": nq,
+                            "nq": nq,
                             "train_start": split["train_start"],
                             "train_end": split["train_end"],
                             "test_start": split["test_start"],
