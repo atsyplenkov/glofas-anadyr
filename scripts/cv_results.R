@@ -4,13 +4,13 @@ library(ggplot2)
 
 # Read all CV results
 cv_results <-
-  fs::dir_ls("data/cv", regexp = ".csv$") |>
+  fs::dir_ls("data/cv", regexp = "_loyo_cv.csv$") |>
   purrr::map_dfr(
     ~ readr::read_csv(.x, show_col_types = FALSE),
     .id = "gauge_id"
   ) |>
   mutate(
-    gauge_id = stringr::str_remove_all(gauge_id, "data/cv/|.csv"),
+    gauge_id = stringr::str_remove_all(gauge_id, "data/cv/|_loyo_cv.csv"),
     nq = factor(
       nq,
       levels = c(sort(as.integer(unique(nq[nq != "raw"]))), "raw")
@@ -47,9 +47,6 @@ cv_tidy <-
       (metric %in% c("pbias", "rmse") & abs(estimate) == min(abs(estimate)))
   ) |>
   ungroup()
-
-cv_tidy |>
-  filter(metric == "log_nse", estimate < 0)
 
 cv_tidy |>
   mutate(

@@ -2,13 +2,14 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from pathlib import Path
-import xsdba as sdba
+from xsdba import DetrendedQuantileMapping, Grouper
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import hydroeval as he
 import warnings
 
 # Suppress divide by zero warnings in logs
 warnings.filterwarnings("ignore", category=RuntimeWarning)
+warnings.filterwarnings("ignore", category=RankWarning)
 
 def read_station_data(station_id, obs_dir, sim_dir):
     """Read observed and simulated data for a station."""
@@ -35,7 +36,7 @@ def read_station_data(station_id, obs_dir, sim_dir):
     merged = merged[
         (merged["year"] >= 1979) & 
         (merged["year"] <= 1996) &
-        (merged["month"].between(5, 9))
+        (merged["month"].between(5, 10))
     ].copy()
     
     # Add epsilon to handle zero flows in multiplicative correction and logs
@@ -45,165 +46,193 @@ def read_station_data(station_id, obs_dir, sim_dir):
     
     return merged
 
-def sliding_window_splits(data, lookback=5, assess_stop=2, step=1):
-    year_non_na_counts = data.groupby("year")["obs"].apply(lambda x: x.notna().sum())
-    years_with_data = sorted(year_non_na_counts[year_non_na_counts > 0].index.tolist())
+def loocv_splits(data):
+    """
+    Generate Leave-One-Out (LOO) splits.
+    
+    Strategy:
+    1. Identify all years with sufficient data.
+    2. Iterate through each year:
+       - Test set: The specific year being iterated.
+       - Training set: All other years combined.
+    
+    This preserves the hydrograph structure (autocorrelation) within the test year
+    while maximizing the training data size.
+    """
+    # Filter for years that have enough data (e.g. > 90% of the season)
+    # Season is May-Sept (approx 153 days). Threshold ~130 days.
+    year_counts = data.groupby("year")["obs"].count()
+    valid_years = sorted(year_counts[year_counts > 90].index.tolist())
     
     splits = []
-    i = 0
-    while i + lookback + assess_stop <= len(years_with_data):
-        train_years = years_with_data[i:i + lookback]
-        test_years = years_with_data[i + lookback:i + lookback + assess_stop]
+    
+    # Need at least 2 years to do training/testing
+    if len(valid_years) < 2:
+        return splits
+
+    for test_year in valid_years:
+        # Train on everything EXCEPT the test year
+        train_years = [y for y in valid_years if y != test_year]
         
         train_mask = data["year"].isin(train_years)
-        test_mask = data["year"].isin(test_years)
+        test_mask = data["year"] == test_year
         
-        splits.append({
-            "train": data[train_mask].copy(),
-            "test": data[test_mask].copy(),
-            "train_years": f"{min(train_years)}-{max(train_years)}",
-            "test_years": f"{min(test_years)}-{max(test_years)}"
-        })
+        train_data = data[train_mask].copy()
+        test_data = data[test_mask].copy()
         
-        i += step
+        if len(train_data) > 0 and len(test_data) > 0:
+            splits.append({
+                "train": train_data,
+                "test": test_data,
+                "test_year": test_year,
+                "n_train_years": len(train_years)
+            })
+            
     return splits
 
-def as_xarray(data, value_col, datetime_col):
-    """Convert DataFrame to xarray DataArray with proper units for xclim."""
+def as_xarray(data, value_col, datetime_col, name="Q"):
+    """Convert DataFrame to xarray DataArray."""
     da = xr.DataArray(
         data[value_col].values,
         coords={"time": pd.to_datetime(data[datetime_col].values)},
         dims=["time"],
-        attrs={"units": "m3 s-1", "kind": "streamflow"},
-        name=value_col
+        attrs={"units": "m3/s"},
+        name=name
     )
     return da
 
 def calculate_metrics(obs, sim):
-    """Calculate hydrological metrics."""
-    obs = np.array(obs)
-    sim = np.array(sim)
+    """Calculate all required metrics."""
+    obs = np.array(obs).flatten()
+    sim = np.array(sim).flatten()
     
-    # Ensure no NaNs or zeros (though epsilon handled zeros earlier)
-    mask = (obs > 0) & (sim > 0) & (~np.isnan(obs)) & (~np.isnan(sim))
+    mask = (obs > 0) & (sim > 0)
     obs = obs[mask]
     sim = sim[mask]
     
-    if len(obs) < 10: # Minimum threshold for valid calculation
+    if len(obs) < 10:
         return None
     
-    # Standard NSE
     nse = he.evaluator(he.nse, sim, obs)
-    # Log NSE (for low flows)
     log_nse = he.evaluator(he.nse, np.log(sim), np.log(obs))
-    # KGE'
     kge, r, alpha, beta = he.evaluator(he.kgeprime, sim, obs)
-    # PBIAS
+    kgenp, r, alpha, beta = he.evaluator(he.kgenp, sim, obs)
     pbias_val = he.evaluator(he.pbias, sim, obs)
-    # RMSE
     rmse_val = he.evaluator(he.rmse, sim, obs)
     
     def to_scalar(val):
-        if isinstance(val, np.ndarray):
-            return float(val.item() if val.size == 1 else val[0])
+        if isinstance(val, (np.ndarray, list)):
+            return float(val[0]) if len(val) > 0 else np.nan
         return float(val)
     
     return {
         "nse": to_scalar(nse),
         "log_nse": to_scalar(log_nse),
         "kgeprime": to_scalar(kge),
+        "kgenp": to_scalar(kgenp),
         "pbias": to_scalar(pbias_val),
         "rmse": to_scalar(rmse_val),
     }
 
 def process_station(station_id, obs_dir, sim_dir, output_dir, quantiles_list):
+    """Process a single station using LOYO-CV."""
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
     
+    # print(f"Processing station {station_id}...")
+    
     data = read_station_data(station_id, obs_dir, sim_dir)
     if len(data) == 0:
-        return station_id, None
+        return station_id, "No Data"
     
-    splits = sliding_window_splits(data)
+    # LOOCV
+    splits = loocv_splits(data)
+    
+    if not splits:
+        return station_id, "Insufficient Data"
+    
     results = []
     
     for split in splits:
         train_df = split["train"]
         test_df = split["test"]
+        test_year = split["test_year"]
         
-        # 1. Calculate Raw Metrics
-        raw_metrics = calculate_metrics(test_df["obs"], test_df["sim"])
+        # 1. Raw Metrics (Benchmark)
+        raw_metrics = calculate_metrics(test_df["obs"].values, test_df["sim"].values)
         if raw_metrics:
             raw_metrics.update({
                 "type": "Raw",
                 "nq": "raw",
-                "train_years": split["train_years"],
-                "test_years": split["test_years"]
+                "test_year": test_year,
+                "n_train_years": split["n_train_years"]
             })
             results.append(raw_metrics)
         
-        # Prepare DataArrays for DQM
+        # Prepare Xarray objects
         train_obs_da = as_xarray(train_df, "obs", "date")
         train_sim_da = as_xarray(train_df, "sim", "date")
         test_sim_da = as_xarray(test_df, "sim", "date")
         
-        # 2. Define Seasonality Grouping
+        # Preserve Seasonality
         # Group by day of year with a window (e.g., +/- 15 days) to capture seasonal drift
-        # group = sdba.base.Grouper("time.dayofyear", window=31)
+        group = Grouper("time.dayofyear", window=31)
         # OR
-        group = sdba.base.Grouper("time.month")
-        
+        # group = sdba.base.Grouper("time.month")
+
         for nq in quantiles_list:
             try:
                 # DQM Training
-                dqm = sdba.DetrendedQuantileMapping.train(
+                # kind="*" (multiplicative) preserves zero bound and handles heteroscedasticity
+                dqm = DetrendedQuantileMapping.train(
                     train_obs_da,
                     train_sim_da,
                     nquantiles=nq,
-                    group=group, 
-                    kind="*" 
+                    group=group,
+                    kind="*",
                 )
                 
-                # Adjustment
                 test_qmap_da = dqm.adjust(test_sim_da)
                 test_qmap = test_qmap_da.values
                 
                 # Calculate Metrics
-                dqm_metrics = calculate_metrics(test_df["obs"], test_qmap)
-                
+                dqm_metrics = calculate_metrics(test_df["obs"].values, test_qmap)
                 if dqm_metrics:
                     dqm_metrics.update({
                         "type": "DQM",
                         "nq": nq,
-                        "train_years": split["train_years"],
-                        "test_years": split["test_years"]
+                        "test_year": test_year,
+                        "n_train_years": split["n_train_years"]
                     })
                     results.append(dqm_metrics)
-                    
             except Exception as e:
-                # Catch specific errors (e.g. not enough data for quantiles)
+                # print(f"  Error station {station_id} year {test_year} nq={nq}: {e}")
                 continue
     
     if results:
         results_df = pd.DataFrame(results)
-        results_df.to_csv(output_path / f"{station_id}.csv", index=False)
+        output_file = output_path / f"{station_id}.csv"
+        results_df.to_csv(output_file, index=False)
         return station_id, len(results)
-    
-    return station_id, None
+    else:
+        return station_id, "No Results"
+
 
 def cv_glofas(stations, 
               obs_dir="data/hydro/obs", 
               sim_dir="data/hydro/raw", 
               output_dir="data/cv", 
-              quantiles_range=[5, 15, 25, 35, 50, 75, 90, 100, 110],
-              # quantiles_range=range(5, 111, 25),
+              quantiles_range=[1, 5, 10, 15, 20, 30, 40, 50],
               max_workers=None):
-    """Perform cross-validation for GloFAS stations in parallel."""
+    """Perform LOOCV for GloFAS stations in parallel."""
     if max_workers is None:
         import os
         max_workers = min(len(stations), os.cpu_count() or 1)
     
     quantiles_list = list(quantiles_range)
+    
+    print(f"Starting LOOCV on {len(stations)} stations.")
+    print(f"Quantiles to test: {quantiles_list}")
     
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
         futures = {
@@ -217,13 +246,12 @@ def cv_glofas(stations,
             station_id = futures[future]
             try:
                 result = future.result()
-                print(f"Completed station {result[0]}")
+                print(f"Completed station {result[0]} (Rows: {result[1]})")
             except Exception as e:
                 print(f"Station {station_id} generated an exception: {e}")
 
 
 if __name__ == "__main__":
-    # Ensure quantiles are reasonable for the data length. 
-    # With limited data, avoid nq > 50 unless window is very long.
+    # Example station list
     stations = [1496, 1497, 1499, 1502, 1504, 1508, 1587]
-    cv_glofas(stations, quantiles_range=[5, 10, 15, 20, 25, 30, 50])
+    cv_glofas(stations)
