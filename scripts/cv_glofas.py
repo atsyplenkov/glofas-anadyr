@@ -39,16 +39,16 @@ def read_station_data(station_id, obs_dir, sim_dir):
     return merged
 
 
-def sliding_window_splits(data, lookback=7, assess_stop=2, step=1):
+def sliding_window_splits(data, lookback=5, assess_stop=2, step=1):
     """Generate sliding window splits for cross-validation."""
-    years = sorted(data["year"].unique())
-    years = [y for y in years if y != 1979]
+    year_non_na_counts = data.groupby("year")["obs"].apply(lambda x: x.notna().sum())
+    years_with_data = sorted(year_non_na_counts[year_non_na_counts > 0].index.tolist())
     
     splits = []
     i = 0
-    while i + lookback + assess_stop <= len(years):
-        train_years = years[i:i + lookback]
-        test_years = years[i + lookback:i + lookback + assess_stop]
+    while i + lookback + assess_stop <= len(years_with_data):
+        train_years = years_with_data[i:i + lookback]
+        test_years = years_with_data[i + lookback:i + lookback + assess_stop]
         
         train_mask = data["year"].isin(train_years)
         test_mask = data["year"].isin(test_years)
@@ -62,8 +62,10 @@ def sliding_window_splits(data, lookback=7, assess_stop=2, step=1):
                 "test": test_data,
                 "train_start": train_data["date"].min(),
                 "train_end": train_data["date"].max(),
+                "train_n": len(train_years),
                 "test_start": test_data["date"].min(),
                 "test_end": test_data["date"].max(),
+                "test_n": len(test_years),
             })
         
         i += step
@@ -148,8 +150,10 @@ def process_station(station_id, obs_dir, sim_dir, output_dir, quantiles_list):
                 "nq": "raw",
                 "train_start": split["train_start"],
                 "train_end": split["train_end"],
+                "train_n": split["train_n"],
                 "test_start": split["test_start"],
                 "test_end": split["test_end"],
+                "test_n": split["test_n"],
             })
             results.append(raw_metrics)
         
@@ -182,8 +186,10 @@ def process_station(station_id, obs_dir, sim_dir, output_dir, quantiles_list):
                             "nq": nq,
                             "train_start": split["train_start"],
                             "train_end": split["train_end"],
+                            "train_n": split["train_n"],
                             "test_start": split["test_start"],
                             "test_end": split["test_end"],
+                            "test_n": split["test_n"],
                         })
                         results.append(dqm_metrics)
             except Exception as e:
@@ -201,8 +207,13 @@ def process_station(station_id, obs_dir, sim_dir, output_dir, quantiles_list):
         return station_id, None
 
 
-def cv_glofas(stations, obs_dir="data/hydro/obs", sim_dir="data/hydro/raw", 
-               output_dir="data/cv", quantiles_range=range(5, 111, 25), max_workers=None):
+def cv_glofas(stations, 
+              obs_dir="data/hydro/obs", 
+              sim_dir="data/hydro/raw", 
+              output_dir="data/cv", 
+              quantiles_range=[5, 15, 25, 35, 50, 75, 90, 100, 110],
+              # quantiles_range=range(5, 111, 25),
+              max_workers=None):
     """Perform cross-validation for GloFAS stations in parallel."""
     if max_workers is None:
         import os

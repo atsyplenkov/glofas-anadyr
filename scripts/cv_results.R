@@ -9,16 +9,23 @@ cv_results <-
     ~ readr::read_csv(.x, show_col_types = FALSE),
     .id = "gauge_id"
   ) |>
-  mutate(gauge_id = stringr::str_remove_all(gauge_id, "data/cv/|.csv"))
+  mutate(
+    gauge_id = stringr::str_remove_all(gauge_id, "data/cv/|.csv"),
+    nq = factor(
+      nq,
+      levels = c(sort(as.integer(unique(nq[nq != "raw"]))), "raw")
+    )
+  ) |>
+  as.data.frame()
 
 cv_results |>
-  filter(gauge_id == "1496") |>
+  filter(gauge_id == "1504") |>
   tidyr::pivot_longer(
     c(nse:rmse),
     names_to = "metric",
     values_to = "estimate"
   ) |>
-  ggplot(aes(x = as.factor(N_quantiles), y = estimate)) +
+  ggplot(aes(x = as.factor(nq), y = estimate)) +
   geom_point(aes(color = type)) +
   facet_wrap(~metric, nrow = 3, scales = "free") +
   labs(x = "Number of quantiles", y = "Estimate", fill = "") +
@@ -30,3 +37,6 @@ cv_results |>
 
 library(lubridate)
 (ymd("1980-05-30") - ymd("1986-09-30")) / 365
+
+
+?tibble
