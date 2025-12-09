@@ -221,7 +221,7 @@ def cv_glofas(stations,
               obs_dir="data/hydro/obs", 
               sim_dir="data/hydro/raw", 
               output_dir="data/cv", 
-              quantiles_range=[1, 5, 10, 15, 20, 30, 40, 50],
+              quantiles_range=[1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
               max_workers=None):
     """Perform LOOCV for GloFAS stations in parallel."""
     if max_workers is None:

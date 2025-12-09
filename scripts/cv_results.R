@@ -61,6 +61,7 @@ cv_tidy |>
     ),
     color = "gray60"
   ) +
+  # FIXME: label on the right and remove vertical axes
   ggrepel::geom_text_repel(
     data = \(x) filter(x, type == "DQM"),
     aes(x = type, y = estimate, label = gauge_id),
