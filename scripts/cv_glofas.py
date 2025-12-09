@@ -4,6 +4,7 @@ import pandas as pd
 import xarray as xr
 from pathlib import Path
 from xsdba import DetrendedQuantileMapping
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 
 def read_station_data(station_id, obs_dir, sim_dir):
@@ -100,99 +101,132 @@ def calculate_metrics(obs, sim):
     pbias_val = he.evaluator(he.pbias, sim, obs)
     rmse_val = he.evaluator(he.rmse, sim, obs)
     
+    def to_scalar(val):
+        if isinstance(val, np.ndarray):
+            return float(val.item() if val.size == 1 else val[0])
+        elif isinstance(val, (list, tuple)):
+            return float(val[0])
+        return float(val)
+    
     return {
-        "nse": nse,
-        "kgeprime": kge,
-        "kgenp": kgenp,
-        "pbias": pbias_val,
-        "rmse": rmse_val,
+        "nse": to_scalar(nse),
+        "kgeprime": to_scalar(kge),
+        "kgenp": to_scalar(kgenp),
+        "pbias": to_scalar(pbias_val),
+        "rmse": to_scalar(rmse_val),
     }
 
 
-def cv_glofas(stations, obs_dir="data/hydro/obs", sim_dir="data/hydro/raw", 
-               output_dir="data/cv", quantiles_range=range(5, 111, 25)):
-    """Perform cross-validation for GloFAS stations."""
+def process_station(station_id, obs_dir, sim_dir, output_dir, quantiles_list):
+    """Process a single station."""
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
     
-    for station_id in stations:
-        print(f"Processing station {station_id}...")
+    print(f"Processing station {station_id}...")
+    
+    data = read_station_data(station_id, obs_dir, sim_dir)
+    if len(data) == 0:
+        print(f"  No data for station {station_id}, skipping...")
+        return station_id, None
+    
+    data["year"] = data["date"].dt.year
+    splits = sliding_window_splits(data)
+    
+    results = []
+    
+    for split in splits:
+        train_df = split["train"]
+        test_df = split["test"]
         
-        data = read_station_data(station_id, obs_dir, sim_dir)
-        if len(data) == 0:
-            print(f"  No data for station {station_id}, skipping...")
-            continue
+        train_obs = train_df["obs"].values
+        train_sim = train_df["sim"].values
+        test_obs = test_df["obs"].values
+        test_sim = test_df["sim"].values
         
-        data["year"] = data["date"].dt.year
-        splits = sliding_window_splits(data)
+        raw_metrics = calculate_metrics(test_obs, test_sim)
+        if raw_metrics:
+            raw_metrics.update({
+                "type": "Raw",
+                "N_quantiles": "raw",
+                "train_start": split["train_start"],
+                "train_end": split["train_end"],
+                "test_start": split["test_start"],
+                "test_end": split["test_end"],
+            })
+            results.append(raw_metrics)
         
-        results = []
+        for nq in quantiles_list:
+            try:
+                train_obs_da = as_xarray(train_df, "obs", "date", "obs")
+                train_sim_da = as_xarray(train_df, "sim", "date", "sim")
+                test_sim_da = as_xarray(test_df, "sim", "date", "sim")
+                
+                dqm = DetrendedQuantileMapping.train(
+                    train_obs_da,
+                    train_sim_da,
+                    nquantiles=nq,
+                    group="time.dayofyear",
+                    kind="+",
+                )
+                
+                test_qmap_da = dqm.adjust(test_sim_da)
+                test_qmap = test_qmap_da.values
+                
+                mask = (test_qmap > 0) & (test_obs > 0) & (test_sim > 0)
+                test_qmap_filtered = test_qmap[mask]
+                test_obs_filtered = test_obs[mask]
+                
+                if len(test_qmap_filtered) > 0:
+                    dqm_metrics = calculate_metrics(test_obs_filtered, test_qmap_filtered)
+                    if dqm_metrics:
+                        dqm_metrics.update({
+                            "type": "DQM",
+                            "N_quantiles": nq,
+                            "train_start": split["train_start"],
+                            "train_end": split["train_end"],
+                            "test_start": split["test_start"],
+                            "test_end": split["test_end"],
+                        })
+                        results.append(dqm_metrics)
+            except Exception as e:
+                print(f"  Error processing station {station_id}, n_quantiles={nq}: {e}")
+                continue
+    
+    if results:
+        results_df = pd.DataFrame(results)
+        output_file = output_path / f"{station_id}.csv"
+        results_df.to_csv(output_file, index=False)
+        print(f"  Saved results to {output_file}")
+        return station_id, len(results)
+    else:
+        print(f"  No results for station {station_id}")
+        return station_id, None
+
+
+def cv_glofas(stations, obs_dir="data/hydro/obs", sim_dir="data/hydro/raw", 
+               output_dir="data/cv", quantiles_range=range(5, 111, 25), max_workers=None):
+    """Perform cross-validation for GloFAS stations in parallel."""
+    if max_workers is None:
+        import os
+        max_workers = min(len(stations), os.cpu_count() or 1)
+    
+    quantiles_list = list(quantiles_range)
+    
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        futures = {
+            executor.submit(
+                process_station, station_id, obs_dir, sim_dir, output_dir, quantiles_list
+            ): station_id
+            for station_id in stations
+        }
         
-        for split in splits:
-            train_df = split["train"]
-            test_df = split["test"]
-            
-            train_obs = train_df["obs"].values
-            train_sim = train_df["sim"].values
-            test_obs = test_df["obs"].values
-            test_sim = test_df["sim"].values
-            
-            raw_metrics = calculate_metrics(test_obs, test_sim)
-            if raw_metrics:
-                raw_metrics.update({
-                    "type": "Raw",
-                    "N_quantiles": "raw",
-                    "train_start": split["train_start"],
-                    "train_end": split["train_end"],
-                    "test_start": split["test_start"],
-                    "test_end": split["test_end"],
-                })
-                results.append(raw_metrics)
-            
-            for nq in quantiles_range:
-                try:
-                    train_obs_da = as_xarray(train_df, "obs", "date", "obs")
-                    train_sim_da = as_xarray(train_df, "sim", "date", "sim")
-                    test_sim_da = as_xarray(test_df, "sim", "date", "sim")
-                    
-                    dqm = DetrendedQuantileMapping.train(
-                        train_obs_da,
-                        train_sim_da,
-                        nquantiles=nq,
-                        group="time.dayofyear",
-                        kind="+",
-                    )
-                    
-                    test_qmap_da = dqm.adjust(test_sim_da)
-                    test_qmap = test_qmap_da.values
-                    
-                    mask = (test_qmap > 0) & (test_obs > 0) & (test_sim > 0)
-                    test_qmap_filtered = test_qmap[mask]
-                    test_obs_filtered = test_obs[mask]
-                    
-                    if len(test_qmap_filtered) > 0:
-                        dqm_metrics = calculate_metrics(test_obs_filtered, test_qmap_filtered)
-                        if dqm_metrics:
-                            dqm_metrics.update({
-                                "type": "DQM",
-                                "N_quantiles": nq,
-                                "train_start": split["train_start"],
-                                "train_end": split["train_end"],
-                                "test_start": split["test_start"],
-                                "test_end": split["test_end"],
-                            })
-                            results.append(dqm_metrics)
-                except Exception as e:
-                    print(f"  Error processing n_quantiles={nq}: {e}")
-                    continue
-        
-        if results:
-            results_df = pd.DataFrame(results)
-            output_file = output_path / f"{station_id}.csv"
-            results_df.to_csv(output_file, index=False)
-            print(f"  Saved results to {output_file}")
-        else:
-            print(f"  No results for station {station_id}")
+        for future in as_completed(futures):
+            station_id = futures[future]
+            try:
+                result = future.result()
+                print(f"Completed station {result[0]}")
+            except Exception as e:
+                print(f"Station {station_id} generated an exception: {e}")
 
 
 if __name__ == "__main__":
