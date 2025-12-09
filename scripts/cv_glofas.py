@@ -9,7 +9,6 @@ import warnings
 
 # Suppress divide by zero warnings in logs
 warnings.filterwarnings("ignore", category=RuntimeWarning)
-warnings.filterwarnings("ignore", category=RankWarning)
 
 def read_station_data(station_id, obs_dir, sim_dir):
     """Read observed and simulated data for a station."""

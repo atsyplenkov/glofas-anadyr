@@ -4,13 +4,13 @@ library(ggplot2)
 
 # Read all CV results
 cv_results <-
-  fs::dir_ls("data/cv", regexp = "_loyo_cv.csv$") |>
+  fs::dir_ls("data/cv", regexp = ".csv$") |>
   purrr::map_dfr(
     ~ readr::read_csv(.x, show_col_types = FALSE),
     .id = "gauge_id"
   ) |>
   mutate(
-    gauge_id = stringr::str_remove_all(gauge_id, "data/cv/|_loyo_cv.csv"),
+    gauge_id = stringr::str_remove_all(gauge_id, "data/cv/|.csv"),
     nq = factor(
       nq,
       levels = c(sort(as.integer(unique(nq[nq != "raw"]))), "raw")
