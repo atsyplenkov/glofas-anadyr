@@ -96,9 +96,11 @@ def calculate_metrics(obs, sim):
     nse = he.evaluator(he.nse, sim, obs)
     # Log NSE (for low flows)
     log_nse = he.evaluator(he.nse, np.log(sim), np.log(obs))
-    # KGE Prime
+    # KGE'
     kge, r, alpha, beta = he.evaluator(he.kgeprime, sim, obs)
+    # PBIAS
     pbias_val = he.evaluator(he.pbias, sim, obs)
+    # RMSE
     rmse_val = he.evaluator(he.rmse, sim, obs)
     
     def to_scalar(val):
@@ -108,7 +110,7 @@ def calculate_metrics(obs, sim):
     
     return {
         "nse": to_scalar(nse),
-        "log_nse": to_scalar(log_nse), # Correctly labeled
+        "log_nse": to_scalar(log_nse),
         "kgeprime": to_scalar(kge),
         "pbias": to_scalar(pbias_val),
         "rmse": to_scalar(rmse_val),
@@ -147,13 +149,13 @@ def process_station(station_id, obs_dir, sim_dir, output_dir, quantiles_list):
         
         # 2. Define Seasonality Grouping
         # Group by day of year with a window (e.g., +/- 15 days) to capture seasonal drift
-        # This is critical for hydrological regimes.
-        group = sdba.base.Grouper("time.dayofyear", window=31)
+        # group = sdba.base.Grouper("time.dayofyear", window=31)
+        # OR
+        group = sdba.base.Grouper("time.month")
         
         for nq in quantiles_list:
             try:
                 # DQM Training
-                # CRITICAL CHANGE: kind="*" (Multiplicative) for streamflow
                 dqm = sdba.DetrendedQuantileMapping.train(
                     train_obs_da,
                     train_sim_da,
@@ -224,4 +226,4 @@ if __name__ == "__main__":
     # Ensure quantiles are reasonable for the data length. 
     # With limited data, avoid nq > 50 unless window is very long.
     stations = [1496, 1497, 1499, 1502, 1504, 1508, 1587]
-    cv_glofas(stations, quantiles_range=[10, 20, 30, 40, 50])
+    cv_glofas(stations, quantiles_range=[5, 10, 15, 20, 25, 30, 50])
