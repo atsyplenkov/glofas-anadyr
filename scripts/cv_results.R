@@ -19,7 +19,7 @@ cv_results <-
   as.data.frame()
 
 cv_results |>
-  filter(gauge_id == "1504") |>
+  filter(gauge_id == "1508") |>
   tidyr::pivot_longer(
     c(nse:rmse),
     names_to = "metric",
@@ -31,12 +31,37 @@ cv_results |>
   labs(x = "Number of quantiles", y = "Estimate", fill = "") +
   scale_fill_manual(values = c("#DC3220", "#009E73"))
 
-cv_results |>
-  filter(gauge_id == "1496") |>
-  count(test_start, test_end)
 
-library(lubridate)
-(ymd("1980-05-30") - ymd("1986-09-30")) / 365
+cv_tidy <-
+  cv_results |>
+  tidyr::pivot_longer(
+    c(nse:rmse),
+    names_to = "metric",
+    values_to = "estimate"
+  ) |>
+  group_by(gauge_id, metric, type, nq) |>
+  ggdist::median_qi(estimate) |>
+  select(-.width:-.interval) |>
+  group_by(gauge_id, metric, type) |>
+  filter(estimate == max(estimate)) |>
+  ungroup()
 
 
-?tibble
+cv_tidy |>
+  mutate(
+    type = factor(type, levels = c("Raw", "DQM"))
+  ) |>
+  ggplot() +
+  geom_line(
+    aes(
+      x = type,
+      y = estimate,
+      group = gauge_id
+    ),
+    color = "gray60"
+  ) +
+  geom_point(aes(x = type, y = estimate, color = type)) +
+  ggrepel::geom_text_repel(aes(x = type, y = estimate, label = gauge_id)) +
+  facet_wrap(~metric, scales = "free_y") +
+  theme_minimal() +
+  theme(legend.position = "bottom")

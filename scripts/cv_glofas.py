@@ -97,9 +97,8 @@ def calculate_metrics(obs, sim):
     if len(obs) == 0:
         return None
     
-    nse = he.evaluator(he.nse, sim, obs)
+    nse = he.evaluator(he.nse, np.log(sim), np.log(obs))
     kge, r, alpha, beta = he.evaluator(he.kgeprime, sim, obs)
-    kgenp, r, alpha, beta = he.evaluator(he.kgenp, sim, obs)
     pbias_val = he.evaluator(he.pbias, sim, obs)
     rmse_val = he.evaluator(he.rmse, sim, obs)
     
@@ -113,7 +112,6 @@ def calculate_metrics(obs, sim):
     return {
         "nse": to_scalar(nse),
         "kgeprime": to_scalar(kge),
-        "kgenp": to_scalar(kgenp),
         "pbias": to_scalar(pbias_val),
         "rmse": to_scalar(rmse_val),
     }
