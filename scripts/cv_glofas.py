@@ -2,10 +2,13 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from pathlib import Path
-from xsdba import DetrendedQuantileMapping
+import xsdba as sdba
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import hydroeval as he
+import warnings
 
+# Suppress divide by zero warnings in logs
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 def read_station_data(station_id, obs_dir, sim_dir):
     """Read observed and simulated data for a station."""
@@ -16,6 +19,8 @@ def read_station_data(station_id, obs_dir, sim_dir):
     sim_df = pd.read_csv(sim_path, parse_dates=["datetime"])
     
     sim_df["date"] = pd.to_datetime(sim_df["datetime"]).dt.date
+    # NOTE: Justification for -1 day lag must be included in the paper method section
+    # (e.g., "Simulations represent 00:00 UTC, effectively prev day average...")
     sim_df["date"] = pd.to_datetime(sim_df["date"]) - pd.Timedelta(days=1)
     
     merged = obs_df.merge(sim_df, on="date", how="inner")
@@ -26,21 +31,21 @@ def read_station_data(station_id, obs_dir, sim_dir):
     merged["year"] = merged["date"].dt.year
     merged["month"] = merged["date"].dt.month
     
+    # Filter for Anadyr open water season (May-Sept)
     merged = merged[
         (merged["year"] >= 1979) & 
         (merged["year"] <= 1996) &
         (merged["month"].between(5, 9))
     ].copy()
     
-    merged = merged[["date", "obs", "sim"]].copy()
-    merged["obs"] = merged["obs"] + 0.01
-    merged["sim"] = merged["sim"] + 0.01
+    # Add epsilon to handle zero flows in multiplicative correction and logs
+    epsilon = 0.01
+    merged["obs"] = merged["obs"] + epsilon
+    merged["sim"] = merged["sim"] + epsilon
     
     return merged
 
-
 def sliding_window_splits(data, lookback=5, assess_stop=2, step=1):
-    """Generate sliding window splits for cross-validation."""
     year_non_na_counts = data.groupby("year")["obs"].apply(lambda x: x.notna().sum())
     years_with_data = sorted(year_non_na_counts[year_non_na_counts > 0].index.tolist())
     
@@ -53,51 +58,45 @@ def sliding_window_splits(data, lookback=5, assess_stop=2, step=1):
         train_mask = data["year"].isin(train_years)
         test_mask = data["year"].isin(test_years)
         
-        train_data = data[train_mask].copy()
-        test_data = data[test_mask].copy()
-        
-        if len(train_data) > 0 and len(test_data) > 0:
-            splits.append({
-                "train": train_data,
-                "test": test_data,
-                "train_start": train_data["date"].min(),
-                "train_end": train_data["date"].max(),
-                "train_n": len(train_years),
-                "test_start": test_data["date"].min(),
-                "test_end": test_data["date"].max(),
-                "test_n": len(test_years),
-            })
+        splits.append({
+            "train": data[train_mask].copy(),
+            "test": data[test_mask].copy(),
+            "train_years": f"{min(train_years)}-{max(train_years)}",
+            "test_years": f"{min(test_years)}-{max(test_years)}"
+        })
         
         i += step
-    
     return splits
 
-
-def as_xarray(data, value_col, datetime_col, name="Q"):
-    """Convert DataFrame to xarray DataArray."""
+def as_xarray(data, value_col, datetime_col):
+    """Convert DataFrame to xarray DataArray with proper units for xclim."""
     da = xr.DataArray(
         data[value_col].values,
         coords={"time": pd.to_datetime(data[datetime_col].values)},
         dims=["time"],
-        attrs={"units": "m3/s"},
-        name=name
+        attrs={"units": "m3 s-1", "kind": "streamflow"},
+        name=value_col
     )
     return da
 
-
 def calculate_metrics(obs, sim):
-    """Calculate all required metrics."""
+    """Calculate hydrological metrics."""
     obs = np.array(obs)
     sim = np.array(sim)
     
-    mask = (obs > 0) & (sim > 0)
+    # Ensure no NaNs or zeros (though epsilon handled zeros earlier)
+    mask = (obs > 0) & (sim > 0) & (~np.isnan(obs)) & (~np.isnan(sim))
     obs = obs[mask]
     sim = sim[mask]
     
-    if len(obs) == 0:
+    if len(obs) < 10: # Minimum threshold for valid calculation
         return None
     
-    nse = he.evaluator(he.nse, np.log(sim), np.log(obs))
+    # Standard NSE
+    nse = he.evaluator(he.nse, sim, obs)
+    # Log NSE (for low flows)
+    log_nse = he.evaluator(he.nse, np.log(sim), np.log(obs))
+    # KGE Prime
     kge, r, alpha, beta = he.evaluator(he.kgeprime, sim, obs)
     pbias_val = he.evaluator(he.pbias, sim, obs)
     rmse_val = he.evaluator(he.rmse, sim, obs)
@@ -105,105 +104,90 @@ def calculate_metrics(obs, sim):
     def to_scalar(val):
         if isinstance(val, np.ndarray):
             return float(val.item() if val.size == 1 else val[0])
-        elif isinstance(val, (list, tuple)):
-            return float(val[0])
         return float(val)
     
     return {
         "nse": to_scalar(nse),
+        "log_nse": to_scalar(log_nse), # Correctly labeled
         "kgeprime": to_scalar(kge),
         "pbias": to_scalar(pbias_val),
         "rmse": to_scalar(rmse_val),
     }
 
-
 def process_station(station_id, obs_dir, sim_dir, output_dir, quantiles_list):
-    """Process a single station."""
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
     
-    print(f"Processing station {station_id}...")
-    
     data = read_station_data(station_id, obs_dir, sim_dir)
     if len(data) == 0:
-        print(f"  No data for station {station_id}, skipping...")
         return station_id, None
     
-    data["year"] = data["date"].dt.year
     splits = sliding_window_splits(data)
-    
     results = []
     
     for split in splits:
         train_df = split["train"]
         test_df = split["test"]
         
-        test_obs = test_df["obs"].values
-        test_sim = test_df["sim"].values
-        
-        raw_metrics = calculate_metrics(test_obs, test_sim)
+        # 1. Calculate Raw Metrics
+        raw_metrics = calculate_metrics(test_df["obs"], test_df["sim"])
         if raw_metrics:
             raw_metrics.update({
                 "type": "Raw",
                 "nq": "raw",
-                "train_start": split["train_start"],
-                "train_end": split["train_end"],
-                "train_n": split["train_n"],
-                "test_start": split["test_start"],
-                "test_end": split["test_end"],
-                "test_n": split["test_n"],
+                "train_years": split["train_years"],
+                "test_years": split["test_years"]
             })
             results.append(raw_metrics)
         
+        # Prepare DataArrays for DQM
+        train_obs_da = as_xarray(train_df, "obs", "date")
+        train_sim_da = as_xarray(train_df, "sim", "date")
+        test_sim_da = as_xarray(test_df, "sim", "date")
+        
+        # 2. Define Seasonality Grouping
+        # Group by day of year with a window (e.g., +/- 15 days) to capture seasonal drift
+        # This is critical for hydrological regimes.
+        group = sdba.base.Grouper("time.dayofyear", window=31)
+        
         for nq in quantiles_list:
             try:
-                train_obs_da = as_xarray(train_df, "obs", "date", "obs")
-                train_sim_da = as_xarray(train_df, "sim", "date", "sim")
-                test_sim_da = as_xarray(test_df, "sim", "date", "sim")
-                
-                dqm = DetrendedQuantileMapping.train(
+                # DQM Training
+                # CRITICAL CHANGE: kind="*" (Multiplicative) for streamflow
+                dqm = sdba.DetrendedQuantileMapping.train(
                     train_obs_da,
                     train_sim_da,
                     nquantiles=nq,
-                    group="time",
-                    kind="+",
+                    group=group, 
+                    kind="*" 
                 )
                 
+                # Adjustment
                 test_qmap_da = dqm.adjust(test_sim_da)
                 test_qmap = test_qmap_da.values
                 
-                mask = (test_qmap > 0) & (test_obs > 0) & (test_sim > 0)
-                test_qmap_filtered = test_qmap[mask]
-                test_obs_filtered = test_obs[mask]
+                # Calculate Metrics
+                dqm_metrics = calculate_metrics(test_df["obs"], test_qmap)
                 
-                if len(test_qmap_filtered) > 0:
-                    dqm_metrics = calculate_metrics(test_obs_filtered, test_qmap_filtered)
-                    if dqm_metrics:
-                        dqm_metrics.update({
-                            "type": "DQM",
-                            "nq": nq,
-                            "train_start": split["train_start"],
-                            "train_end": split["train_end"],
-                            "train_n": split["train_n"],
-                            "test_start": split["test_start"],
-                            "test_end": split["test_end"],
-                            "test_n": split["test_n"],
-                        })
-                        results.append(dqm_metrics)
+                if dqm_metrics:
+                    dqm_metrics.update({
+                        "type": "DQM",
+                        "nq": nq,
+                        "train_years": split["train_years"],
+                        "test_years": split["test_years"]
+                    })
+                    results.append(dqm_metrics)
+                    
             except Exception as e:
-                print(f"  Error processing station {station_id}, n_quantiles={nq}: {e}")
+                # Catch specific errors (e.g. not enough data for quantiles)
                 continue
     
     if results:
         results_df = pd.DataFrame(results)
-        output_file = output_path / f"{station_id}.csv"
-        results_df.to_csv(output_file, index=False)
-        print(f"  Saved results to {output_file}")
+        results_df.to_csv(output_path / f"{station_id}.csv", index=False)
         return station_id, len(results)
-    else:
-        print(f"  No results for station {station_id}")
-        return station_id, None
-
+    
+    return station_id, None
 
 def cv_glofas(stations, 
               obs_dir="data/hydro/obs", 
@@ -237,5 +221,7 @@ def cv_glofas(stations,
 
 
 if __name__ == "__main__":
+    # Ensure quantiles are reasonable for the data length. 
+    # With limited data, avoid nq > 50 unless window is very long.
     stations = [1496, 1497, 1499, 1502, 1504, 1508, 1587]
-    cv_glofas(stations)
+    cv_glofas(stations, quantiles_range=[10, 20, 30, 40, 50])

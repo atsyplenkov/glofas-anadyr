@@ -19,7 +19,7 @@ cv_results <-
   as.data.frame()
 
 cv_results |>
-  filter(gauge_id == "1508") |>
+  filter(gauge_id == "1496") |>
   tidyr::pivot_longer(
     c(nse:rmse),
     names_to = "metric",
