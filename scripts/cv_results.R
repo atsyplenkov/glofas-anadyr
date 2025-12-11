@@ -56,7 +56,9 @@ cv_tidy <-
 cv_table <-
   cv_tidy |>
   mutate(
-    estimate_fmt = glue::glue("{mw_round(estimate)} [95% CI {mw_round(.lower)} – {mw_round(.upper)}]")
+    estimate_fmt = glue::glue(
+      "{mw_round(estimate)} [95% CI {mw_round(.lower)} – {mw_round(.upper)}]"
+    )
   ) |>
   select(gauge_id, type, metric, estimate_fmt) |>
   pivot_wider(
@@ -98,8 +100,37 @@ write.csv(
   row.names = FALSE
 )
 
-# section -----------------------------------------------------------
+# Estimate increase in performance -----------------------------------------------------------
+perf_increase <-
+  cv_tidy |>
+  select(gauge_id, metric, type, estimate) |>
+  pivot_wider(
+    names_from = "type",
+    values_from = "estimate"
+  ) |>
+  mutate(
+    pct_change = case_when(
+      metric == "RMSE" ~ ((Raw - DQM) / Raw) * 100,
+      metric == "pBIAS" ~ ((abs(Raw) - abs(DQM)) / abs(Raw)) * 100,
+      TRUE ~ ((DQM - Raw) / pmax(abs(Raw), 0.01)) * 100
+    )
+  ) |>
+  group_by(metric) |>
+  summarize(
+    avg_pct_increase = mean(pct_change, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  arrange(metric)
 
+perf_increase
+# # # A tibble: 5 × 2
+#   metric avg_pct_increase
+#   <chr>             <dbl>
+# 1 KGE'              17.6
+# 2 NSE                8.12
+# 3 NSElog           208.
+# 4 RMSE               6.86
+# 5 pBIAS            -10.4
 
 # Plot -----------------------------------------------------------
 loocv_plot <-
@@ -158,7 +189,7 @@ loocv_plot <-
   )
 
 save_png(
-  "figures/fig03_loocv.png",
+  "figures/fig04_loocv.png",
   loocv_plot,
   dpi = 500
 )
