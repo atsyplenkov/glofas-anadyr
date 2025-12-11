@@ -16,3 +16,36 @@ list_to_csv <-
       )
     }
   }
+
+# Rounding function ------------------------------------------------------
+mw_round <- function(x) {
+  xa <- abs(x)
+
+  # Calculate the preliminary result.
+  # Note: format() returns a character value.
+  r <- ifelse(
+    xa < 10,
+    ifelse(
+      xa < 1,
+      format(x, digits = 1, scientific = FALSE),
+      round(x, 2)
+    ),
+    ifelse(xa < 100, round(x, 1), round(x, 0))
+  )
+
+  # Initialize the output vector (as character).
+  result <- r
+
+  # For values where abs(x) is at least 1, apply additional formatting:
+  idx <- xa >= 1
+  idx[is.na(idx)] <- FALSE
+  if (any(idx)) {
+    # Use prettyNum to add thousand separators.
+    rf <- prettyNum(as.numeric(r[idx]), big.mark = ",")
+    # Replace the normal hyphen with a Unicode minus sign for negatives.
+    rf <- ifelse(as.numeric(r[idx]) < 0, gsub("-", "−", rf), rf)
+    result[idx] <- rf
+  }
+
+  trimws(result)
+}

@@ -47,14 +47,60 @@ cv_tidy <-
     (!metric %in% c("pBIAS", "RMSE") & estimate == max(estimate)) |
       (metric %in% c("pBIAS", "RMSE") & abs(estimate) == min(abs(estimate)))
   ) |>
-  ungroup()
+  ungroup() |>
+  mutate(
+    type = factor(type, levels = c("Raw", "DQM"))
+  )
+
+# Make it pretty -----------------------------------------------------------
+cv_table <-
+  cv_tidy |>
+  mutate(
+    estimate_fmt = mw_round(estimate)
+  ) |>
+  select(gauge_id, type, metric, estimate_fmt) |>
+  pivot_wider(
+    names_from = "metric",
+    values_from = "estimate_fmt"
+  ) |>
+  arrange(gauge_id, type)
+
+nq_table <-
+  cv_tidy |>
+  filter(type == "DQM") |>
+  select(gauge_id, metric, nq) |>
+  mutate(
+    nq_fmt = ifelse(as.character(nq) == "raw", "—", as.character(nq))
+  ) |>
+  group_by(gauge_id) |>
+  summarize(
+    type = factor("NQ", levels = c("Raw", "DQM", "NQ")),
+    `KGE'` = nq_fmt[metric == "KGE'"][1],
+    NSE = nq_fmt[metric == "NSE"][1],
+    NSElog = nq_fmt[metric == "NSElog"][1],
+    RMSE = nq_fmt[metric == "RMSE"][1],
+    pBIAS = nq_fmt[metric == "pBIAS"][1],
+    .groups = "drop"
+  )
+
+cv_table <-
+  cv_table |>
+  bind_rows(nq_table) |>
+  arrange(gauge_id, type)
+
+# write on disk
+fs::dir_create("tables")
+write.csv(
+  cv_table,
+  "tables/tbl2_cv-results.csv",
+  quote = FALSE,
+  na = "",
+  row.names = FALSE
+)
 
 # Plot -----------------------------------------------------------
 loocv_plot <-
   cv_tidy |>
-  mutate(
-    type = factor(type, levels = c("Raw", "DQM"))
-  ) |>
   ggplot() +
   geom_line(
     aes(
