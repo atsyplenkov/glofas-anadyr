@@ -100,7 +100,7 @@ write.csv(
   row.names = FALSE
 )
 
-# Estimate increase in performance -----------------------------------------------------------
+# Estimate increase in performance ---------------------------------------------
 perf_increase <-
   cv_tidy |>
   select(gauge_id, metric, type, estimate) |>
