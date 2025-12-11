@@ -2,6 +2,10 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 
+# ggplot2 settings
+source("src/utils_ggplot.R")
+theme_set(theme_mw())
+
 # Read all CV results
 cv_results <-
   fs::dir_ls("data/cv", regexp = ".csv$") |>
@@ -16,6 +20,15 @@ cv_results <-
       levels = c(sort(as.integer(unique(nq[nq != "raw"]))), "raw")
     )
   ) |>
+  rename(
+    `KGE'` = kgeprime,
+    `KGEnp` = kgenp,
+    `NSE` = nse,
+    `NSElog` = log_nse,
+    `RMSE` = rmse,
+    `pBIAS` = pbias
+  ) |>
+  select(-KGEnp) |>
   as.data.frame()
 
 # cv_results |>
@@ -34,7 +47,7 @@ cv_results <-
 cv_tidy <-
   cv_results |>
   tidyr::pivot_longer(
-    c(nse:rmse),
+    c(NSE:RMSE),
     names_to = "metric",
     values_to = "estimate"
   ) |>
@@ -43,8 +56,8 @@ cv_tidy <-
   select(-.width:-.interval) |>
   group_by(gauge_id, metric, type) |>
   filter(
-    (!metric %in% c("pbias", "rmse") & estimate == max(estimate)) |
-      (metric %in% c("pbias", "rmse") & abs(estimate) == min(abs(estimate)))
+    (!metric %in% c("pBIAS", "RMSE") & estimate == max(estimate)) |
+      (metric %in% c("pBIAS", "RMSE") & abs(estimate) == min(abs(estimate)))
   ) |>
   ungroup()
 
@@ -61,16 +74,19 @@ cv_tidy |>
     ),
     color = "gray60"
   ) +
-  # FIXME: label on the right and remove vertical axes
   ggrepel::geom_text_repel(
-    data = \(x) filter(x, type == "DQM"),
+    data = \(x) filter(x, type == "Raw"),
     aes(x = type, y = estimate, label = gauge_id),
-    hjust = 0,
-    nudge_x = 0.25,
+    hjust = 1,
+    nudge_x = -0.2,
     direction = "y",
     segment.curvature = 0,
     segment.angle = 90,
-    min.segment.length = 0
+    min.segment.length = 0,
+    box.padding = 0.1,
+    family = mw_font,
+    size = 3,
+    segment.size = 0.3
   ) +
   geom_point(
     aes(x = type, y = estimate, fill = type),
@@ -78,6 +94,17 @@ cv_tidy |>
     shape = 21,
     color = "black"
   ) +
+  scale_fill_manual(
+    name = "",
+    values = c(mw_red, mw_blue),
+    labels = c("Raw", "Detrended Quantile Mapping")
+  ) +
+  labs(
+    x = "",
+    y = "Estimate"
+  ) +
   facet_wrap(~metric, scales = "free_y") +
-  theme_minimal() +
-  theme(legend.position = "bottom")
+  theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.77, 0.3)
+  )
