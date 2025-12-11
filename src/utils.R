@@ -27,7 +27,8 @@ mw_round <- function(x) {
     xa < 10,
     ifelse(
       xa < 1,
-      format(x, digits = 1, scientific = FALSE),
+      # format(x, digits = 2, scientific = FALSE),
+      round(x, 2),
       round(x, 2)
     ),
     ifelse(xa < 100, round(x, 1), round(x, 0))
@@ -41,7 +42,7 @@ mw_round <- function(x) {
   idx[is.na(idx)] <- FALSE
   if (any(idx)) {
     # Use prettyNum to add thousand separators.
-    rf <- prettyNum(as.numeric(r[idx]), big.mark = ",")
+    rf <- prettyNum(as.numeric(r[idx]), big.mark = " ")
     # Replace the normal hyphen with a Unicode minus sign for negatives.
     rf <- ifelse(as.numeric(r[idx]) < 0, gsub("-", "−", rf), rf)
     result[idx] <- rf

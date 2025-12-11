@@ -56,7 +56,7 @@ cv_tidy <-
 cv_table <-
   cv_tidy |>
   mutate(
-    estimate_fmt = mw_round(estimate)
+    estimate_fmt = glue::glue("{mw_round(estimate)} [95% CI {mw_round(.lower)} – {mw_round(.upper)}]")
   ) |>
   select(gauge_id, type, metric, estimate_fmt) |>
   pivot_wider(
@@ -97,6 +97,9 @@ write.csv(
   na = "",
   row.names = FALSE
 )
+
+# section -----------------------------------------------------------
+
 
 # Plot -----------------------------------------------------------
 loocv_plot <-
