@@ -6,7 +6,7 @@ library(ggplot2)
 source("src/utils_ggplot.R")
 theme_set(theme_mw())
 
-# Read all CV results
+# Read CV -----------------------------------------------------------
 cv_results <-
   fs::dir_ls("data/cv", regexp = ".csv$") |>
   purrr::map_dfr(
@@ -31,19 +31,7 @@ cv_results <-
   select(-KGEnp) |>
   as.data.frame()
 
-# cv_results |>
-#   filter(gauge_id == "1496") |>
-#   tidyr::pivot_longer(
-#     c(nse:rmse),
-#     names_to = "metric",
-#     values_to = "estimate"
-#   ) |>
-#   ggplot(aes(x = as.factor(nq), y = estimate)) +
-#   geom_point(aes(color = type)) +
-#   facet_wrap(~metric, nrow = 3, scales = "free") +
-#   labs(x = "Number of quantiles", y = "Estimate", fill = "") +
-#   scale_fill_manual(values = c("#DC3220", "#009E73"))
-
+# Aggregate CV -----------------------------------------------------------
 cv_tidy <-
   cv_results |>
   tidyr::pivot_longer(
@@ -61,7 +49,9 @@ cv_tidy <-
   ) |>
   ungroup()
 
-cv_tidy |>
+# Plot -----------------------------------------------------------
+loocv_plot <-
+  cv_tidy |>
   mutate(
     type = factor(type, levels = c("Raw", "DQM"))
   ) |>
@@ -85,7 +75,7 @@ cv_tidy |>
     min.segment.length = 0,
     box.padding = 0.1,
     family = mw_font,
-    size = 3,
+    size = 2.5,
     segment.size = 0.3
   ) +
   geom_point(
@@ -95,16 +85,31 @@ cv_tidy |>
     color = "black"
   ) +
   scale_fill_manual(
-    name = "",
+    name = "GloFAS-ERA5 LOOCV",
     values = c(mw_red, mw_blue),
-    labels = c("Raw", "Detrended Quantile Mapping")
+    labels = c(
+      "Raw",
+      "Bias-corrected with\nDetrended Quantile Mapping"
+    )
   ) +
   labs(
     x = "",
     y = "Estimate"
   ) +
+  scale_x_discrete(
+    expand = expansion(
+      mult = c(0.2, 0)
+    )
+  ) +
+  coord_cartesian(xlim = c(0.7, 2.3)) +
   facet_wrap(~metric, scales = "free_y") +
   theme(
     legend.position = "inside",
-    legend.position.inside = c(0.77, 0.3)
+    legend.position.inside = c(0.7, 0.3)
   )
+
+save_png(
+  "figures/fig03_loocv.png",
+  loocv_plot,
+  dpi = 500
+)

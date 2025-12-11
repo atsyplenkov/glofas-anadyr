@@ -149,7 +149,7 @@ theme_mw <- function(
       plot.margin = ggplot2::margin(
         t = 0.5,
         r = 0.5,
-        l = -0.25,
+        l = 0,
         b = 0.25,
         "lines"
       )
