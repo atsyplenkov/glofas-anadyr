@@ -1,5 +1,5 @@
 Bootstrap: docker
-From: rocker/r-ver:4.5.1
+From: rocker/geospatial:4.5.1
 
 %labels
     Author Anatoly Tsyplenkov <sharp.couch9400@fastmail.com>
