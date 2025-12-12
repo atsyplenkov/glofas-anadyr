@@ -4,18 +4,31 @@
      <a href="https://github.com/atsyplenkov/glofas-anadyr/.github/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/atsyplenkov/glofas-anadyr/ci.yml?style=flat&labelColor=1C2C2E&color=039475&logo=GitHub%20Actions&logoColor=white&label=CI"></a>
 </p>
 
-### 🟪 summary
-TBA
+Repository contains code and data to reproduce the results of the paper "Reconstructing daily streamflow data for Anadyr River using GloFAS-ERA5 reanalysis" submitted to the journal "GEOGRAPHY, ENVIRONMENT, SUSTAINABILITY". To cite this work, please use the following citation:
 
-### 🟩 project structure
-The `Snakefile` is the backbone of the workflow. It defines the order of the steps and the dependencies between them. In the current implementation it uses the built-in [R integration of Snakemake](https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#r-and-r-markdown). That is, user can specify variables in the `Snakefile` and use them in the R scripts via `snakemake@input` and `snakemake@output` objects (see `scripts/test_script.R` for an example).
+> Tsyplenkov A., Shkolnyi D., Kravchenko A., Golovlev P. Reconstructing daily streamflow data for Anadyr River using GloFAS-ERA5 reanalysis. GEOGRAPHY, ENVIRONMENT, SUSTAINABILITY. (In Review) 
+
+### Abstract
+The Anadyr River is the largest river system in the Russian Far East with no water discharge observations available since 1996. The current study addresses this data scarcity by reconstructing daily streamflow series for the period 1979–2025 using the GloFAS-ERA5 v4.0 reanalysis product. To mitigate systematic model biases, we applied the Detrended Quantile Mapping correction method, optimised via a Leave-One-Out Cross-Validation strategy using historical gauging records and recent in-situ ADCP water discharge measurements.
+
+The bias-correction procedure yielded a meaningful improvement in predictive performance, increasing the median Modified Kling-Gupta Efficiency by approximately 17% across the basin. Notably, the cross-validation analysis revealed that for stations previously used in initial global model calibration, a parsimonious linear scaling approach (with one quantile only) outperformed complex non-linear mapping, thereby preventing overfitting. The reconstructed long-term time series reveals a robust, statistically significant increasing trend in mean annual water discharge across the basin (up to 0.5% per year). These findings align the Anadyr River with the broader pattern of hydrological intensification observed across the Eurasian Arctic, likely driven by a shift in precipitation regimes from snow to rain during the shoulder seasons. This research demonstrates that bias-corrected global reanalysis offers a reliable alternative to ground-based monitoring in data-scarce Arctic environments.
+
+### Project structure
+The `Snakefile` is the backbone of the workflow. It defines the order of the steps and the dependencies between them.
 
 ```text
 .
 ├── container.def   # Singularity definition file
 ├── container.sif   # Singularity image file
-├── data              # Data directory
-├── renv            # renv directory
+├── data            # Data directory with 
+│   ├── cv          # LOOCV results
+│   ├── geometry    # Gauging station locations
+│   ├── glofas      # GloFAS-ERA5 grids
+│   ├── hydro       # Pre-processed streamflow data
+│   └── raw         # Raw streamflow data
+├── figures         # Figures for the paper
+├── tables          # Tables for the paper
+├── renv            # renv internal dir
 │   ├── activate.R
 │   ├── library
 │   ├── settings.json
@@ -27,7 +40,8 @@ The `Snakefile` is the backbone of the workflow. It defines the order of the ste
 └── Snakefile       # Snakemake workflow file
 
 ```
-### 🔷 how to use reproduce
+
+### How to use reproduce
 1. Clone the repository:
 ```shell
 git clone https://github.com/atsyplenkov/glofas-anadyr
@@ -36,7 +50,7 @@ cd glofas-anadyr
 
 2. Install `miniforge3` and `apptainer` using default params as described in their docs. Then install `snakemake`. Any `snakemake` version will do, but the current template has been tested under `9.14.1`:
 ```shell
-conda create -c conda-forge -c bioconda -n snakemake snakemake=9.10.1
+conda create -c conda-forge -c bioconda -n snakemake snakemake=9.14.1
 ```
 
 3. Activate `snakemake` by running:
@@ -48,8 +62,3 @@ conda activate snakemake
 ```shell
 snakemake --use-singularity --cores 1
 ```
-If you want to run workflow in parallel, you can use the following command:
-```shell
-snakemake --use-singularity --cores 2
-```
-It will make `snakemake` to run jobs simultaneously.
