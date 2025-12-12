@@ -108,3 +108,85 @@ anadyr_list <-
   lapply(dplyr::arrange, date)
 
 list_to_csv(anadyr_list, Q_DIR)
+
+# Data availability ------------------------------------------------------
+library(ggplot2)
+source("src/utils_ggplot.R")
+
+ggplot2::theme_set(theme_mw())
+
+anadyr_na <-
+  streamflow_data |>
+  filter(!is.na(id)) |>
+  dplyr::mutate(
+    id = factor(
+      id,
+      levels = lookup$id,
+      labels = glue::glue(
+        "{lookup$river_en} — {lookup$name_en} ({lookup$id})"
+      )
+    )
+  ) |>
+  dplyr::group_by(id) |>
+  tidyr::complete(
+    date = seq.Date(as.Date("1979-01-01"), max(date))
+  ) |>
+  dplyr::filter(lubridate::month(date) %in% c(5:10)) |>
+  dplyr::mutate(year = lubridate::year(date)) |>
+  dplyr::group_by(id, year) |>
+  dplyr::reframe(na_rate = 1 - sum(is.na(q_cms)) / dplyr::n())
+
+anadyr_missing_plot <-
+  anadyr_na |>
+  dplyr::filter(year >= 1979) |>
+  ggplot2::ggplot(ggplot2::aes(x = year)) +
+  ggplot2::geom_errorbar(
+    ggplot2::aes(ymin = 0, ymax = 1, color = "Missing"),
+    width = 0,
+    lwd = 4,
+    key_glyph = draw_key_rect
+  ) +
+  ggplot2::geom_errorbar(
+    ggplot2::aes(ymin = 0, ymax = na_rate, color = "Available"),
+    width = 0,
+    lwd = 4,
+    key_glyph = draw_key_rect
+  ) +
+  ggplot2::scale_x_continuous(
+    name = "",
+    breaks = scales::breaks_width(2),
+    minor_breaks = scales::breaks_width(1)
+  ) +
+  ggplot2::scale_y_continuous(
+    name = "Daily streamflow data availability",
+    limits = c(0, 1),
+    expand = ggplot2::expansion(0, 0),
+    labels = scales::percent_format(),
+    breaks = c(0, 0.5, 1)
+  ) +
+  ggplot2::scale_color_viridis_d(
+    name = "",
+    option = "rocket",
+    begin = 0.2,
+    end = 0.9,
+    guide = ggplot2::guide_legend(
+      override.aes = list(alpha = 1),
+      title.position = "top",
+      nrow = 2
+    )
+  ) +
+  ggplot2::facet_wrap(~id, ncol = 1) +
+  ggplot2::theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.8, 0.06),
+    legend.key.height = ggplot2::unit(0.7, "lines"),
+    legend.key.width = ggplot2::unit(0.7, "lines"),
+    legend.key.spacing.y = ggplot2::unit(0.1, "lines")
+  )
+
+save_png(
+  "figures/fig03_missing-data.png",
+  anadyr_missing_plot,
+  w = 13,
+  h = 16
+)
