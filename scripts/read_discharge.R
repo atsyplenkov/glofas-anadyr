@@ -8,7 +8,7 @@ source("src/utils.R")
 # Lookup table -----------------------------------------------------------
 # Source: personal communication manually digitised by students
 # from yearbooks
-streamflow_excel <- "data/raw/Анадырь-расходы1223.xlsx"
+streamflow_excel <- snakemake@input[["file"]]
 
 # fmt: skip
 lookup <- tibble::tribble(
@@ -98,7 +98,7 @@ streamflow_data <-
   collapse::unlist2d(idcols = FALSE)
 
 # Save to CSV -----------------------------------------------------------
-Q_DIR <- "data/hydro/obs"
+Q_DIR <- dirname(snakemake@output[["obs_files"]][1])
 fs::dir_create(Q_DIR)
 
 anadyr_list <-
@@ -185,7 +185,7 @@ anadyr_missing_plot <-
   )
 
 save_png(
-  "figures/fig03_missing-data.png",
+  snakemake@output[["figure"]],
   anadyr_missing_plot,
   w = 13,
   h = 16

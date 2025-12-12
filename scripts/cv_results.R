@@ -8,13 +8,13 @@ theme_set(theme_mw())
 
 # Read CV -----------------------------------------------------------
 cv_results <-
-  fs::dir_ls("data/cv", regexp = ".csv$") |>
+  snakemake@input[["cv_files"]] |>
   purrr::map_dfr(
     ~ readr::read_csv(.x, show_col_types = FALSE),
     .id = "gauge_id"
   ) |>
   mutate(
-    gauge_id = stringr::str_remove_all(gauge_id, "data/cv/|.csv"),
+    gauge_id = stringr::str_remove_all(gauge_id, ".*/|.csv"),
     nq = factor(
       nq,
       levels = c(sort(as.integer(unique(nq[nq != "raw"]))), "raw")
@@ -91,10 +91,10 @@ cv_table <-
   arrange(gauge_id, type)
 
 # write on disk
-fs::dir_create("tables")
+fs::dir_create(dirname(snakemake@output[["table"]]))
 write.csv(
   cv_table,
-  "tables/tbl2_cv-results.csv",
+  snakemake@output[["table"]],
   quote = FALSE,
   na = "",
   row.names = FALSE
@@ -189,7 +189,7 @@ loocv_plot <-
   )
 
 save_png(
-  "figures/fig04_loocv.png",
+  snakemake@output[["figure"]],
   loocv_plot,
   dpi = 500
 )

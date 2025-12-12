@@ -12,13 +12,13 @@ theme_set(theme_mw())
 
 # Read data -----------------------------------------------------------
 obs_data <-
-  fs::dir_ls("data/hydro/obs", regexp = ".csv$") |>
+  snakemake@input[["obs_files"]] |>
   purrr::map_dfr(
     ~ readr::read_csv(.x, show_col_types = FALSE),
     .id = "gauge_id"
   ) |>
   mutate(
-    gauge_id = stringr::str_remove_all(gauge_id, "data/hydro/obs/|.csv"),
+    gauge_id = stringr::str_remove_all(gauge_id, ".*/|.csv"),
     date = lubridate::as_date(date),
     obs = q_cms,
     .keep = "unused"
@@ -26,26 +26,26 @@ obs_data <-
   filter(!is.na(obs))
 
 cor_data <-
-  fs::dir_ls("data/hydro/cor", regexp = ".csv$") |>
+  snakemake@input[["cor_files"]] |>
   purrr::map_dfr(
     ~ readr::read_csv(.x, show_col_types = FALSE),
     .id = "gauge_id"
   ) |>
   mutate(
-    gauge_id = stringr::str_remove_all(gauge_id, "data/hydro/cor/|.csv"),
+    gauge_id = stringr::str_remove_all(gauge_id, ".*/|.csv"),
     date = lubridate::as_date(date) - 1,
     cor = q_cor,
     .keep = "unused"
   )
 
 raw_data <-
-  fs::dir_ls("data/hydro/raw", regexp = ".csv$") |>
+  snakemake@input[["raw_files"]] |>
   purrr::map_dfr(
     ~ readr::read_csv(.x, show_col_types = FALSE),
     .id = "gauge_id"
   ) |>
   mutate(
-    gauge_id = stringr::str_remove_all(gauge_id, "data/hydro/raw/|.csv"),
+    gauge_id = stringr::str_remove_all(gauge_id, ".*/|.csv"),
     date = lubridate::as_date(datetime) - 1,
     raw = q_raw,
     .keep = "unused"
@@ -180,7 +180,7 @@ scatter_plots <-
   theme(legend.position = "bottom", legend.direction = "vertical")
 
 save_png(
-  "figures/fig05_correction_scatter.png",
+  snakemake@output[["scatter"]],
   scatter_plots,
   w = 20,
   h = 11,
@@ -304,4 +304,4 @@ adcp_glofas <-
   ) +
   theme(legend.position = "inside", legend.position.inside = c(0.75, 0.1))
 
-save_png("figures/fig07_anadyr_adcp_glofas.png", plot = adcp_glofas)
+save_png(snakemake@output[["adcp"]], plot = adcp_glofas)

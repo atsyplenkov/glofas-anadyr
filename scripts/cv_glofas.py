@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from pathlib import Path
+from os.path import dirname
 from xsdba import DetrendedQuantileMapping, Grouper
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import hydroeval as he
@@ -251,6 +252,22 @@ def cv_glofas(stations,
 
 
 if __name__ == "__main__":
-    # Example station list
-    stations = [1496, 1497, 1499, 1502, 1504, 1508, 1587]
-    cv_glofas(stations)
+    try:
+        # When run by Snakemake, snakemake object is available
+        output_files = snakemake.output.cv_files
+        stations = [int(Path(f).stem) for f in output_files]
+        
+        obs_dir = dirname(snakemake.input.obs_files[0])
+        sim_dir = dirname(snakemake.input.raw_files[0])
+        output_dir = dirname(snakemake.output.cv_files[0])
+        
+        cv_glofas(
+            stations=stations,
+            obs_dir=obs_dir,
+            sim_dir=sim_dir,
+            output_dir=output_dir
+        )
+    except NameError:
+        # When run standalone
+        stations = [1496, 1497, 1499, 1502, 1504, 1508, 1587]
+        cv_glofas(stations)
