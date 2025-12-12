@@ -245,8 +245,8 @@ all_m <-
   rename(" " = 1)
 
 # Plot
-# adcp_glofas <-
-cor_meas |>
+adcp_glofas <-
+  cor_meas |>
   ggplot() +
   geom_abline(slope = 1, color = "grey60", lty = "longdash") +
   geom_smooth(
@@ -287,6 +287,7 @@ cor_meas |>
   scale_fill_manual(
     name = "GloFAS-ERA5",
     values = c("Raw" = mw_red, "Bias-corrected" = mw_blue),
+    breaks = c("Raw", "Bias-corrected")
   ) +
   coord_fixed(xlim = c(0, 8000), ylim = c(0, 8000), expand = FALSE) +
   scale_y_continuous(
@@ -301,8 +302,6 @@ cor_meas |>
     x = "Observed Q (ADCP), m³/s",
     y = "Predicted Q, m³/s"
   ) +
-  theme(legend.position = "inside", legend.position.inside = c(0.1, 0.7))
+  theme(legend.position = "inside", legend.position.inside = c(0.75, 0.1))
 
-adcp_glofas
-
-save_png("figures/temp/anadyr_adcp_glofas2.png", plot = adcp_glofas)
+save_png("figures/fig07_anadyr_adcp_glofas.png", plot = adcp_glofas)
