@@ -13,12 +13,11 @@ The Anadyr River is the largest river system in the Russian Far East with no wat
 
 The bias-correction procedure yielded a meaningful improvement in predictive performance, increasing the median Modified Kling-Gupta Efficiency by approximately 17% across the basin. Notably, the cross-validation analysis revealed that for stations previously used in initial global model calibration, a parsimonious linear scaling approach (with one quantile only) outperformed complex non-linear mapping, thereby preventing overfitting. The reconstructed long-term time series reveals a robust, statistically significant increasing trend in mean annual water discharge across the basin (up to 0.5% per year). These findings align the Anadyr River with the broader pattern of hydrological intensification observed across the Eurasian Arctic, likely driven by a shift in precipitation regimes from snow to rain during the shoulder seasons. This research demonstrates that bias-corrected global reanalysis offers a reliable alternative to ground-based monitoring in data-scarce Arctic environments.
 
-<figure>
-  <img src="figures/fig04_loocv.png" width="450"/>
-  <figcaption>
-    Estimated changes in median cross-validation metrics across all gauging stations between raw and bias-corrected GloFAS-ERA5 daily streamflow data for the Anadyr River basin.
-  </figcaption>
-</figure>
+<center>
+<img src="figures/fig04_loocv.png" width="450"/>
+
+> Estimated changes in median cross-validation metrics across all gauging stations between raw and bias-corrected GloFAS-ERA5 daily streamflow data for the Anadyr River basin.
+</center>
 
 ### Project structure
 The `Snakefile` is the backbone of the workflow. It defines the order of the steps and the dependencies between them.
