@@ -23,7 +23,7 @@ obs_data <-
     obs = q_cms,
     .keep = "unused"
   ) |>
-  filter(!is.na(q))
+  filter(!is.na(obs))
 
 cor_data <-
   fs::dir_ls("data/hydro/cor", regexp = ".csv$") |>
@@ -187,101 +187,122 @@ save_png(
   dpi = 300
 )
 
-# # Monthly comparison -----------------------------------------------------------
-# monthly_data <-
-#   comparison_data |>
-#   filter(
-#     year >= 1979,
-#     year <= 1996,
-#     month %in% 5:10
-#   ) |>
-#   group_by(gauge_id, month) |>
-#   summarize(
-#     obs_mean = mean(obs, na.rm = TRUE),
-#     cor_mean = mean(cor, na.rm = TRUE),
-#     obs_sd = sd(obs, na.rm = TRUE),
-#     cor_sd = sd(cor, na.rm = TRUE),
-#     .groups = "drop"
-#   ) |>
-#   mutate(
-#     month_name = factor(
-#       month.abb[month],
-#       levels = month.abb[5:10]
-#     )
-#   )
+# ADCP measurements -----------------------------------------------------------
+#fmt: skip
+measured <- tibble::tribble(
+  ~date,      ~adcp,
+  "25-06-21", NA,       
+  "28-06-21", 7415L,    
+  "29-06-21", NA,       
+  "01-07-21", 6163L,    
+  "22-07-22", 1794L,    
+  "23-07-22", NA,       
+  "24-07-22", NA,       
+  "27-07-22", 1152L,    
+  "13-06-24", 5270L,    
+  "17-06-24", NA,       
+  "18-06-24", NA,       
+  "22-06-24", 4608L,    
+  "15-08-24", 1425L,    
+  "20-08-24", NA,       
+  "22-08-24", 986L
+) |> 
+  mutate(date = lubridate::as_date(date, format = "%d-%m-%y")) |> 
+  filter(!is.na(adcp))
 
-# monthly_plots <-
-#   monthly_data |>
-#   ggplot() +
-#   geom_col(
-#     aes(x = month_name, y = obs_mean),
-#     fill = mw_black,
-#     alpha = 0.5,
-#     position = position_dodge(width = 0.7)
-#   ) +
-#   geom_col(
-#     aes(x = month_name, y = cor_mean),
-#     fill = mw_blue,
-#     alpha = 0.5,
-#     position = position_dodge(width = 0.7)
-#   ) +
-#   geom_errorbar(
-#     aes(
-#       x = month_name,
-#       ymin = obs_mean - obs_sd,
-#       ymax = obs_mean + obs_sd
-#     ),
-#     width = 0.2,
-#     color = mw_black,
-#     linewidth = 0.3
-#   ) +
-#   geom_errorbar(
-#     aes(
-#       x = month_name,
-#       ymin = cor_mean - cor_sd,
-#       ymax = cor_mean + cor_sd
-#     ),
-#     width = 0.2,
-#     color = mw_blue,
-#     linewidth = 0.3
-#   ) +
-#   labs(
-#     x = "Month",
-#     y = "Mean discharge (m³/s)"
-#   ) +
-#   facet_wrap(~gauge_id, scales = "free_y", ncol = 2) +
-#   theme(
-#     strip.text = element_text(size = 10)
-#   )
+# Bind together
+cor_meas <-
+  measured |>
+  left_join(
+    filter(cor_data, gauge_id == 1499),
+    by = join_by(date)
+  ) |>
+  left_join(
+    filter(raw_data, gauge_id == 1499),
+    by = join_by(date)
+  )
 
-# save_png(
-#   "figures/fig_correction_monthly.png",
-#   monthly_plots,
-#   w = 20,
-#   h = 24,
-#   dpi = 500
-# )
+# Estimate metrics
+metrics <- yardstick::metric_set(kge2012, nse, pbias, rmse)
 
-# # Summary table -----------------------------------------------------------
-# summary_table <-
-#   metrics |>
-#   mutate(
-#     gauge_id = as.character(gauge_id),
-#     NSE = mw_round(nse),
-#     `KGE'` = mw_round(kge),
-#     RMSE = mw_round(rmse),
-#     `pBIAS` = mw_round(pbias)
-#   ) |>
-#   select(gauge_id, NSE, `KGE'`, RMSE, `pBIAS`) |>
-#   arrange(gauge_id)
+cor_metrics <- metrics(cor_meas, adcp, cor)
+raw_metrics <- metrics(cor_meas, adcp, raw)
 
-# fs::dir_create("tables")
-# write.csv(
-#   summary_table,
-#   "tables/tbl_correction_metrics.csv",
-#   quote = FALSE,
-#   na = "",
-#   row.names = FALSE
-# )
+all_m <-
+  bind_rows(
+    raw_metrics,
+    cor_metrics,
+    .id = "type"
+  ) |>
+  select(-.estimator) |>
+  tidyr::pivot_wider(
+    names_from = `type`,
+    values_from = .estimate,
+    values_fn = ~ mw_round(.x)
+  ) |>
+  rename(Raw = 2, DQM = 3) |>
+  mutate(.metric = c("KGE'", "NSE", "pBIAS", "RMSE")) |>
+  rename(" " = 1)
 
-# print(summary_table)
+# Plot
+# adcp_glofas <-
+cor_meas |>
+  ggplot() +
+  geom_abline(slope = 1, color = "grey60", lty = "longdash") +
+  geom_smooth(
+    aes(x = adcp, y = raw),
+    method = "lm",
+    color = colorspace::adjust_transparency(mw_red, 0.7),
+    se = FALSE,
+    show.legend = FALSE
+  ) +
+  geom_smooth(
+    aes(x = adcp, y = cor),
+    color = colorspace::adjust_transparency(mw_blue, 0.7),
+    method = "lm",
+    se = FALSE,
+    show.legend = FALSE
+  ) +
+  geom_point(
+    aes(x = adcp, y = raw, fill = "Raw"),
+    size = 2.5,
+    shape = 21,
+    color = "black"
+  ) +
+  geom_point(
+    aes(x = adcp, y = cor, fill = "Bias-corrected"),
+    size = 2.5,
+    shape = 21,
+    color = "black"
+  ) +
+  ggpp::geom_table_npc(
+    label = list(all_m),
+    npcx = 0.1,
+    npcy = 0.9,
+    parse = TRUE,
+    table.theme = ttheme_gtminimal,
+    family = mw_font,
+    inherit.aes = FALSE
+  ) +
+  scale_fill_manual(
+    name = "GloFAS-ERA5",
+    values = c("Raw" = mw_red, "Bias-corrected" = mw_blue),
+  ) +
+  coord_fixed(xlim = c(0, 8000), ylim = c(0, 8000), expand = FALSE) +
+  scale_y_continuous(
+    breaks = scales::pretty_breaks(),
+    labels = scales::number_format(big.mark = ",")
+  ) +
+  scale_x_continuous(
+    breaks = scales::pretty_breaks(),
+    labels = scales::number_format(big.mark = ",")
+  ) +
+  labs(
+    x = "Observed Q (ADCP), m³/s",
+    y = "Predicted Q, m³/s"
+  ) +
+  theme(legend.position = "inside", legend.position.inside = c(0.1, 0.7))
+
+adcp_glofas
+
+save_png("figures/temp/anadyr_adcp_glofas2.png", plot = adcp_glofas)

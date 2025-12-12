@@ -169,7 +169,7 @@ loocv_plot <-
     values = c(mw_red, mw_blue),
     labels = c(
       "Raw",
-      "Bias-corrected with\nDetrended Quantile Mapping"
+      "Bias-corrected"
     )
   ) +
   labs(
