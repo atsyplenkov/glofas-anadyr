@@ -15,6 +15,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         
+      - name: Create .env file
+        run: |
+          echo "ECMWF_TOKEN=${{ secrets.ECMWF_TOKEN }}" > .env
+        
       - name: Set up Apptainer
         uses: eWaterCycle/setup-apptainer@v2
         
