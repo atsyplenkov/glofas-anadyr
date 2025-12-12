@@ -123,10 +123,6 @@ scatter_plots <-
     x <- scatter_data[scatter_data$gauge_id == gauge_id_val, ]
     lims <- facet_limits[facet_limits$gauge_id == gauge_id_val, ]
 
-    idx <- which(gauge_ids == gauge_id_val)
-    row_idx <- ((idx - 1) %/% n_col) + 1
-    col_idx <- ((idx - 1) %% n_col) + 1
-
     x |>
       ggplot() +
       geom_abline(
@@ -157,6 +153,9 @@ scatter_plots <-
         values = c(mw_red, mw_blue),
         labels = c("Raw", "Bias-corrected")
       ) +
+      guides(
+        color = guide_legend(override.aes = list(alpha = 1, size = 2))
+      ) +
       scale_x_continuous(
         limits = c(lims$lim_min, lims$lim_max),
         expand = expansion(mult = c(0, 0.01))
@@ -176,7 +175,9 @@ scatter_plots <-
         plot.margin = margin(-5, -5, -5, -5, unit = "pt")
       )
   }) |>
-  wrap_plots(ncol = 4, guides = "collect")
+  append(list(guide_area())) |>
+  wrap_plots(ncol = 4, guides = "collect") &
+  theme(legend.position = "bottom", legend.direction = "vertical")
 
 save_png(
   "figures/fig05_correction_scatter.png",
