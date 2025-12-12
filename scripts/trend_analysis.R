@@ -30,7 +30,7 @@ cor_data <-
   ) |>
   mutate(
     gauge_id = stringr::str_remove_all(gauge_id, "data/hydro/cor/|.csv"),
-    date = lubridate::as_date(date),
+    date = lubridate::as_date(date) - 1,
     q = q_cor,
     type = "cor",
     .keep = "unused"

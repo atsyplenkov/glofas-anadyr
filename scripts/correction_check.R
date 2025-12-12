@@ -19,9 +19,11 @@ obs_data <-
   ) |>
   mutate(
     gauge_id = stringr::str_remove_all(gauge_id, "data/hydro/obs/|.csv"),
-    date = lubridate::as_date(date)
+    date = lubridate::as_date(date),
+    obs = q_cms,
+    .keep = "unused"
   ) |>
-  filter(!is.na(q_cms))
+  filter(!is.na(q))
 
 cor_data <-
   fs::dir_ls("data/hydro/cor", regexp = ".csv$") |>
@@ -31,7 +33,22 @@ cor_data <-
   ) |>
   mutate(
     gauge_id = stringr::str_remove_all(gauge_id, "data/hydro/cor/|.csv"),
-    date = lubridate::as_date(date)
+    date = lubridate::as_date(date) - 1,
+    cor = q_cor,
+    .keep = "unused"
+  )
+
+raw_data <-
+  fs::dir_ls("data/hydro/raw", regexp = ".csv$") |>
+  purrr::map_dfr(
+    ~ readr::read_csv(.x, show_col_types = FALSE),
+    .id = "gauge_id"
+  ) |>
+  mutate(
+    gauge_id = stringr::str_remove_all(gauge_id, "data/hydro/raw/|.csv"),
+    date = lubridate::as_date(datetime) - 1,
+    raw = q_raw,
+    .keep = "unused"
   )
 
 # Merge data -----------------------------------------------------------
@@ -39,12 +56,11 @@ comparison_data <-
   obs_data |>
   inner_join(
     cor_data,
-    by = c("gauge_id", "date"),
-    suffix = c("_obs", "_cor")
+    by = c("gauge_id", "date")
   ) |>
-  rename(
-    obs = q_cms,
-    cor = q_cor
+  left_join(
+    raw_data,
+    by = c("gauge_id", "date")
   ) |>
   filter(!is.na(obs), !is.na(cor)) |>
   mutate(
@@ -54,6 +70,8 @@ comparison_data <-
   )
 
 # Calculate metrics -----------------------------------------------------------
+# Metrics of the corrected GloFAS streamflow for the
+# whole period 1979-1996
 calculate_metrics <- function(obs, sim) {
   tibble(
     nse = tidyhydro::nse_vec(obs, sim),
@@ -71,11 +89,6 @@ metrics <-
     .groups = "drop"
   )
 
-metrics |>
-  filter(gauge_id == 149) |>
-  filter(kge == max(kge) | nse == max(nse))
-
-
 # Scatter plots -----------------------------------------------------------
 scatter_data <-
   comparison_data |>
@@ -84,13 +97,14 @@ scatter_data <-
     year <= 1996,
     month %in% 5:10,
     obs > 0,
-    cor > 0
+    cor > 0,
+    !(gauge_id == 1504 & obs > 6000)
   )
 
 facet_limits <-
   scatter_data |>
   summarize(
-    min_val = min(c(obs, cor), na.rm = TRUE),
+    min_val = 0,
     max_val = max(c(obs, cor), na.rm = TRUE),
     .by = gauge_id
   ) |>
@@ -102,8 +116,6 @@ facet_limits <-
   )
 
 gauge_ids <- sort(unique(scatter_data$gauge_id))
-n_col <- 3
-n_row <- ceiling(length(gauge_ids) / n_col)
 
 scatter_plots <-
   gauge_ids |>
@@ -126,18 +138,36 @@ scatter_plots <-
       ) +
       rasterise(
         geom_point(
-          aes(x = obs, y = cor),
+          aes(x = obs, y = cor, color = "DQM"),
           alpha = 0.4,
           size = 0.5,
-          color = mw_blue
         ),
         dpi = 300
       ) +
-      scale_x_continuous(limits = c(lims$lim_min, lims$lim_max)) +
-      scale_y_continuous(limits = c(lims$lim_min, lims$lim_max)) +
+      rasterise(
+        geom_point(
+          aes(x = obs, y = raw, color = "Raw"),
+          alpha = 0.4,
+          size = 0.5,
+        ),
+        dpi = 300
+      ) +
+      scale_color_manual(
+        name = "GloFAS-ERA5",
+        values = c(mw_red, mw_blue),
+        labels = c("Raw", "Bias-corrected")
+      ) +
+      scale_x_continuous(
+        limits = c(lims$lim_min, lims$lim_max),
+        expand = expansion(mult = c(0, 0.01))
+      ) +
+      scale_y_continuous(
+        limits = c(lims$lim_min, lims$lim_max),
+        expand = expansion(mult = c(0, 0.01))
+      ) +
       labs(
-        x = "Observed streamflow, m³/s",
-        y = "Corrected streamflow, m³/s"
+        x = "Observed Q, m³/s",
+        y = "Predicted Q, m³/s"
       ) +
       facet_wrap(~gauge_id) +
       coord_fixed(ratio = 1, expand = FALSE) +
@@ -146,13 +176,13 @@ scatter_plots <-
         plot.margin = margin(-5, -5, -5, -5, unit = "pt")
       )
   }) |>
-  wrap_plots(ncol = n_col, guides = "collect")
+  wrap_plots(ncol = 4, guides = "collect")
 
 save_png(
   "figures/fig05_correction_scatter.png",
   scatter_plots,
   w = 20,
-  h = 20,
+  h = 11,
   dpi = 300
 )
 
