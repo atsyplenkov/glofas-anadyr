@@ -8,13 +8,13 @@ theme_set(theme_mw())
 
 # Read data -----------------------------------------------------------
 obs_data <-
-  fs::dir_ls("data/hydro/obs", regexp = ".csv$") |>
+  snakemake@input[["obs_files"]] |>
   purrr::map_dfr(
     ~ readr::read_csv(.x, show_col_types = FALSE),
     .id = "gauge_id"
   ) |>
   mutate(
-    gauge_id = stringr::str_remove_all(gauge_id, "data/hydro/obs/|.csv"),
+    gauge_id = stringr::str_remove_all(gauge_id, ".*/|.csv"),
     date = lubridate::as_date(date),
     q = q_cms,
     type = "obs",
@@ -23,13 +23,13 @@ obs_data <-
   filter(!is.na(q))
 
 cor_data <-
-  fs::dir_ls("data/hydro/cor", regexp = ".csv$") |>
+  snakemake@input[["cor_files"]] |>
   purrr::map_dfr(
     ~ readr::read_csv(.x, show_col_types = FALSE),
     .id = "gauge_id"
   ) |>
   mutate(
-    gauge_id = stringr::str_remove_all(gauge_id, "data/hydro/cor/|.csv"),
+    gauge_id = stringr::str_remove_all(gauge_id, ".*/|.csv"),
     date = lubridate::as_date(date),
     q = q_cor,
     type = "cor",
@@ -37,13 +37,13 @@ cor_data <-
   )
 
 raw_data <-
-  fs::dir_ls("data/hydro/raw", regexp = ".csv$") |>
+  snakemake@input[["raw_files"]] |>
   purrr::map_dfr(
     ~ readr::read_csv(.x, show_col_types = FALSE),
     .id = "gauge_id"
   ) |>
   mutate(
-    gauge_id = stringr::str_remove_all(gauge_id, "data/hydro/raw/|.csv"),
+    gauge_id = stringr::str_remove_all(gauge_id, ".*/|.csv"),
     date = lubridate::as_date(datetime) - 1,
     q = q_raw,
     type = "raw",
@@ -91,7 +91,7 @@ ts_plots <-
   )
 
 save_png(
-  "figures/fig02_lamutskoe1986.png",
+  snakemake@output[["figure"]],
   ts_plots,
   dpi = 300
 )

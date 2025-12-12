@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from pathlib import Path
+from os.path import dirname
 from xsdba import DetrendedQuantileMapping, Grouper
 import warnings
 
@@ -148,4 +149,21 @@ def correct_all_stations(
     print("Correction complete!")
 
 if __name__ == "__main__":
-    correct_all_stations()
+    try:
+        # When run by Snakemake, snakemake object is available
+        output_files = snakemake.output.cor_files
+        stations = [int(Path(f).stem) for f in output_files]
+        
+        obs_dir = dirname(snakemake.input.obs_files[0])
+        raw_dir = dirname(snakemake.input.raw_files[0])
+        output_dir = dirname(snakemake.output.cor_files[0])
+        
+        correct_all_stations(
+            stations=stations,
+            obs_dir=obs_dir,
+            raw_dir=raw_dir,
+            output_dir=output_dir
+        )
+    except NameError:
+        # When run standalone
+        correct_all_stations()

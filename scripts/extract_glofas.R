@@ -7,25 +7,25 @@ source("src/utils_glofas.R")
 source("src/utils.R")
 
 # Directory with streamflow data
-Q_DIR <- "data/hydro/obs"
+Q_DIR <- dirname(snakemake@input[["obs_files"]][1])
 
 # Load gauging station locations -----------------------------------------
 sites_ids <-
-  fs::dir_ls(Q_DIR) |>
+  snakemake@input[["obs_files"]] |>
   fs::path_file() |>
-  tools::file_path_sans_ext()
+  tools::file_path_sans_ext() |>
+  as.integer()
 
 gauges <-
   sf::st_read(
-    "data/geometry/anadyr_gauges.gpkg",
+    snakemake@input[["geometry"]],
     query = "SELECT id, geom AS geometry FROM anadyr_gauges",
     quiet = TRUE
   ) |>
   dplyr::filter(id %in% sites_ids)
 
 # Load GloFAS ------------------------------------------------------------
-glofas_dir <-
-  fs::dir_ls("data/glofas/", regexp = ".nc$")
+glofas_dir <- snakemake@input[["glofas_files"]]
 
 # Read all GloFAS NetCDFs
 glofas_ls <-
@@ -63,7 +63,7 @@ glofas_df <-
   dplyr::as_tibble()
 
 # Save as CSVs -----------------------------------------------------------
-RAW_DIR <- "data/hydro/raw"
+RAW_DIR <- dirname(snakemake@output[["raw_files"]][1])
 fs::dir_create(RAW_DIR)
 
 glofas_list <-
