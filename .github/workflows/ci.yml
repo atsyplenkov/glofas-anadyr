@@ -22,9 +22,10 @@ jobs:
       - name: Set up Apptainer
         uses: eWaterCycle/setup-apptainer@v2
         
+        # Run Snakemake w/o GloFAS downloading (it takes too much time)
       - name: Run Snakemake workflow
-        uses: snakemake/snakemake-github-action@v2
-        with:
-          directory: '.'
-          snakefile: 'Snakefile'
-          args: '--use-singularity --cores 1'
+        run: |
+          snakemake \
+            --use-singularity \
+            --cores 1 \
+            --allowed-rules apptainer_build read_discharge cv_glofas cv_results glofas_correction correction_check ts_plot trend_analysis
