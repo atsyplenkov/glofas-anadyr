@@ -2,8 +2,7 @@ library(ggplot2)
 library(ggpp)
 
 # Fonts
-systemfonts::require_font("Ubuntu", dir = "assets")
-mw_font <- "Ubuntu"
+mw_font <- "Noto Sans"
 
 # Colors
 # https://personal.sron.nl/~pault/data/colourschemes.pdf

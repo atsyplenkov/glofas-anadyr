@@ -39,8 +39,8 @@ From: rocker/geospatial:4.5.1
     # Restore packages using renv
     R --quiet -e 'renv::restore(lockfile = "/renv.lock", library = "/renvlib")'
     
-    # Install curl and ca-certificates (required for uv installer)
-    apt-get update && apt-get install -y --no-install-recommends curl ca-certificates && rm -rf /var/lib/apt/lists/*
+    # Install curl, ca-certificates, and Noto Sans fonts (excellent Unicode coverage)
+    apt-get update && apt-get install -y --no-install-recommends curl ca-certificates fonts-noto-core fonts-noto-extra && rm -rf /var/lib/apt/lists/*
     
     # Install uv for Python dependency management
     # Use the official installer script (installs to /root/.local/bin)

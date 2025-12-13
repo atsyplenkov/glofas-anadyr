@@ -87,6 +87,7 @@ m_data <-
 annual_trends <-
   m_data |>
   ggplot(aes(x = year, y = q_mean, color = type)) +
+  # Optional: add Mann-Kendall trends
   # geom_abline(
   #   data = trends,
   #   aes(slope = slope, intercept = intercept, color = type)
@@ -105,7 +106,6 @@ annual_trends <-
   facet_wrap(~gauge_id, scales = "free") +
   theme(
     legend.position = "inside",
-    # legend.direction = "horizontal",
     legend.position.inside = c(0.35, 0.15)
   )
 
@@ -131,6 +131,7 @@ trends <-
   select(-data) |>
   ungroup()
 
+# Write down Table 3
 trends |>
   select(-slope:-tau) |>
   relocate(gauge_id:period, pct, p) |>
