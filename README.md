@@ -6,7 +6,7 @@
 
 Repository contains code and data to reproduce the results of the paper "Reconstructing daily streamflow data for Anadyr River using GloFAS-ERA5 reanalysis" submitted to the journal "GEOGRAPHY, ENVIRONMENT, SUSTAINABILITY". To cite this work, please use the following citation:
 
-> Tsyplenkov A., Shkolnyi D., Kravchenko A., Golovlev P. Reconstructing daily streamflow data for Anadyr River using GloFAS-ERA5 reanalysis. GEOGRAPHY, ENVIRONMENT, SUSTAINABILITY. (In Review) 
+> *Tsyplenkov A., Shkolnyi D., Kravchenko A., Golovlev P.* Reconstructing daily streamflow data for Anadyr River using GloFAS-ERA5 reanalysis. GEOGRAPHY, ENVIRONMENT, SUSTAINABILITY. 2026 (*In Review*) 
 
 ### Abstract
 The Anadyr River is the largest river system in the Russian Far East with no water discharge observations available since 1996. The current study addresses this data scarcity by reconstructing daily streamflow series for the period 1979–2025 using the GloFAS-ERA5 v4.0 reanalysis product. To mitigate systematic model biases, we applied the Detrended Quantile Mapping correction method, optimised via a Leave-One-Out Cross-Validation strategy using historical gauging records and recent in-situ ADCP water discharge measurements.
@@ -17,33 +17,28 @@ The bias-correction procedure yielded a meaningful improvement in predictive per
   <img src="figures/fig04_loocv.png" width="450"/>
 </p>
 
-> Estimated changes in median cross-validation metrics across all gauging stations between raw and bias-corrected GloFAS-ERA5 daily streamflow data for the Anadyr River basin.
-
+> Estimated changes in median cross-validation metrics across all gauging stations between raw and bias-corrected GloFAS-ERA5 daily streamflow data for the Anadyr River basin. Each point represents the median of 10–17 LOOCV metric estimates for a single station.
 
 ### Project structure
-The `Snakefile` is the backbone of the workflow. It defines the order of the steps and the dependencies between them.
+The `Snakefile` is the backbone of the workflow. It defines the order of the steps and the dependencies between them. The snakemake workflow is designed to be run in a containerized environment using Apptainer. R and Python dependencies are managed using `renv` and `uv`.
 
 ```text
 .
 ├── container.def   # Singularity definition file
 ├── container.sif   # Singularity image file
-├── data            # Data directory with 
-│   ├── cv          # LOOCV results
-│   ├── geometry    # Gauging station locations
-│   ├── glofas      # GloFAS-ERA5 grids
-│   ├── hydro       # Pre-processed streamflow data
-│   └── raw         # Raw streamflow data
-├── figures         # Figures for the paper
-├── tables          # Tables for the paper
-├── renv            # renv internal dir
-│   ├── activate.R
-│   ├── library
-│   ├── settings.json
-│   └── staging
+├── data/           # Data directory with 
+│   ├── cv          #  LOOCV results
+│   ├── geometry    #  Gauging station locations
+│   ├── glofas      #  GloFAS-ERA5 grids
+│   ├── hydro       #  Pre-processed streamflow data
+│   └── raw         #  Raw streamflow data
+├── scripts/        # Scripts directory, both R and Python
+├── figures/        # Figures for the paper
+├── tables/         # Tables for the paper
+├── renv/           # renv internal dir
 ├── renv.lock       # renv file with R deps
 ├── pyproject.toml  # Python project desc
 ├── uv.lock         # uv file with Python deps
-├── scripts         # Scripts directory, both R and Py
 └── Snakefile       # Snakemake workflow file
 
 ```
@@ -69,3 +64,6 @@ conda activate snakemake
 ```shell
 snakemake --use-singularity --cores 1
 ```
+
+> [!NOTE]
+> There is no need to use the orchestration, it is anticipated that each step can be run manually. Just follow the order of the steps in `Snakefile` and the dependencies between them.
