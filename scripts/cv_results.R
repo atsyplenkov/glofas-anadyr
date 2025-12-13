@@ -3,6 +3,7 @@ library(tidyr)
 library(ggplot2)
 
 # ggplot2 settings
+source("src/utils.R")
 source("src/utils_ggplot.R")
 theme_set(theme_mw())
 
