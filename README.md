@@ -50,17 +50,26 @@ git clone https://github.com/atsyplenkov/glofas-anadyr
 cd glofas-anadyr
 ```
 
-2. Install `miniforge3` and `apptainer` using default params as described in their docs. Then install `snakemake`. Any `snakemake` version will do, but the current template has been tested under `9.14.1`:
+2. Obtain ECMWF API token and create `.env` file:
+   * Register for a free account at [Copernicus CDS](https://cds.climate.copernicus.eu/)
+   * After registration, go to your [user profile page](https://cds.climate.copernicus.eu/user) and copy your API key
+   * Create a `.env` file in the project root directory with the following content:
+```shell
+echo "ECMWF_TOKEN=your_api_key" > .env
+```
+   Replace `your_api_key` with your actual Copernicus CDS credentials.
+
+3. Install `miniforge3` and `apptainer` using default params as described in their docs. Then install `snakemake`. Any `snakemake` version will do, but the current template has been tested under `9.14.1`:
 ```shell
 conda create -c conda-forge -c bioconda -n snakemake snakemake=9.14.1
 ```
 
-3. Activate `snakemake` by running:
+4. Activate `snakemake` by running:
 ```shell
 conda activate snakemake
 ```
 
-4. Run the workflow with the following command:
+5. Run the workflow with the following command:
 ```shell
 snakemake --use-singularity --cores 1
 ```
