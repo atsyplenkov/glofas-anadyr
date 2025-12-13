@@ -14,7 +14,14 @@ obs_data <-
     .id = "gauge_id"
   ) |>
   mutate(
-    gauge_id = stringr::str_remove_all(gauge_id, ".*/|.csv"),
+    gauge_id = as.character(factor(
+      gauge_id,
+      levels = 1:7,
+      labels = snakemake@input[["obs_files"]]
+    ))
+  ) |>
+  mutate(
+    gauge_id = tools::file_path_sans_ext(basename(gauge_id)),
     date = lubridate::as_date(date),
     q = q_cms,
     type = "obs",
@@ -29,7 +36,14 @@ cor_data <-
     .id = "gauge_id"
   ) |>
   mutate(
-    gauge_id = stringr::str_remove_all(gauge_id, ".*/|.csv"),
+    gauge_id = as.character(factor(
+      gauge_id,
+      levels = 1:7,
+      labels = snakemake@input[["cor_files"]]
+    ))
+  ) |>
+  mutate(
+    gauge_id = tools::file_path_sans_ext(basename(gauge_id)),
     date = lubridate::as_date(date),
     q = q_cor,
     type = "cor",
@@ -43,7 +57,14 @@ raw_data <-
     .id = "gauge_id"
   ) |>
   mutate(
-    gauge_id = stringr::str_remove_all(gauge_id, ".*/|.csv"),
+    gauge_id = as.character(factor(
+      gauge_id,
+      levels = 1:7,
+      labels = snakemake@input[["raw_files"]]
+    ))
+  ) |>
+  mutate(
+    gauge_id = tools::file_path_sans_ext(basename(gauge_id)),
     date = lubridate::as_date(datetime) - 1,
     q = q_raw,
     type = "raw",

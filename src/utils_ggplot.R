@@ -2,13 +2,8 @@ library(ggplot2)
 library(ggpp)
 
 # Fonts
-mw_font <- tryCatch({
-  systemfonts::require_font("Ubuntu", dir = "assets")
-  "Ubuntu"
-}, error = function(e) {
-  # Fallback to sans-serif if font not available
-  "sans"
-})
+systemfonts::require_font("Ubuntu", dir = "assets")
+mw_font <- "Ubuntu"
 
 # Colors
 # https://personal.sron.nl/~pault/data/colourschemes.pdf
@@ -208,30 +203,33 @@ save_png <-
   ) {
     # Create output directory if it doesn't exist
     fs::dir_create(dirname(filename))
-    
+
     # Try ragg first, fallback to png if it fails (e.g., in CI environments)
-    tryCatch({
-      ggplot2::ggsave(
-        filename = filename,
-        plot = plot,
-        device = ragg::agg_png,
-        dpi = dpi,
-        width = w,
-        height = h,
-        units = units,
-        bg = "#ffffff"
-      )
-    }, error = function(e) {
-      # Fallback to standard png device
-      ggplot2::ggsave(
-        filename = filename,
-        plot = plot,
-        device = "png",
-        dpi = dpi,
-        width = w,
-        height = h,
-        units = units,
-        bg = "#ffffff"
-      )
-    })
+    tryCatch(
+      {
+        ggplot2::ggsave(
+          filename = filename,
+          plot = plot,
+          device = ragg::agg_png,
+          dpi = dpi,
+          width = w,
+          height = h,
+          units = units,
+          bg = "#ffffff"
+        )
+      },
+      error = function(e) {
+        # Fallback to standard png device
+        ggplot2::ggsave(
+          filename = filename,
+          plot = plot,
+          device = "png",
+          dpi = dpi,
+          width = w,
+          height = h,
+          units = units,
+          bg = "#ffffff"
+        )
+      }
+    )
   }

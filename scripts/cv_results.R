@@ -15,7 +15,14 @@ cv_results <-
     .id = "gauge_id"
   ) |>
   mutate(
-    gauge_id = stringr::str_remove_all(gauge_id, ".*/|.csv"),
+    gauge_id = as.character(factor(
+      gauge_id,
+      levels = 1:7,
+      labels = snakemake@input[["cv_files"]]
+    ))
+  ) |>
+  mutate(
+    gauge_id = tools::file_path_sans_ext(basename(gauge_id)),
     nq = factor(
       nq,
       levels = c(sort(as.integer(unique(nq[nq != "raw"]))), "raw")
@@ -58,7 +65,7 @@ cv_table <-
   cv_tidy |>
   mutate(
     estimate_fmt = glue::glue(
-      "{mw_round(estimate)} [95% CI {mw_round(.lower)} – {mw_round(.upper)}]"
+      "{mw_round(estimate)} [95% CI {mw_round(.lower)} - {mw_round(.upper)}]"
     )
   ) |>
   select(gauge_id, type, metric, estimate_fmt) |>
@@ -73,7 +80,7 @@ nq_table <-
   filter(type == "DQM") |>
   select(gauge_id, metric, nq) |>
   mutate(
-    nq_fmt = ifelse(as.character(nq) == "raw", "—", as.character(nq))
+    nq_fmt = ifelse(as.character(nq) == "raw", "-", as.character(nq))
   ) |>
   group_by(gauge_id) |>
   summarize(

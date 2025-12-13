@@ -18,7 +18,14 @@ obs_data <-
     .id = "gauge_id"
   ) |>
   mutate(
-    gauge_id = stringr::str_remove_all(gauge_id, ".*/|.csv"),
+    gauge_id = as.character(factor(
+      gauge_id,
+      levels = 1:7,
+      labels = snakemake@input[["obs_files"]]
+    ))
+  ) |>
+  mutate(
+    gauge_id = tools::file_path_sans_ext(basename(gauge_id)),
     date = lubridate::as_date(date),
     obs = q_cms,
     .keep = "unused"
@@ -32,7 +39,14 @@ cor_data <-
     .id = "gauge_id"
   ) |>
   mutate(
-    gauge_id = stringr::str_remove_all(gauge_id, ".*/|.csv"),
+    gauge_id = as.character(factor(
+      gauge_id,
+      levels = 1:7,
+      labels = snakemake@input[["cor_files"]]
+    ))
+  ) |>
+  mutate(
+    gauge_id = tools::file_path_sans_ext(basename(gauge_id)),
     date = lubridate::as_date(date) - 1,
     cor = q_cor,
     .keep = "unused"
@@ -45,7 +59,14 @@ raw_data <-
     .id = "gauge_id"
   ) |>
   mutate(
-    gauge_id = stringr::str_remove_all(gauge_id, ".*/|.csv"),
+    gauge_id = as.character(factor(
+      gauge_id,
+      levels = 1:7,
+      labels = snakemake@input[["raw_files"]]
+    ))
+  ) |>
+  mutate(
+    gauge_id = tools::file_path_sans_ext(basename(gauge_id)),
     date = lubridate::as_date(datetime) - 1,
     raw = q_raw,
     .keep = "unused"
@@ -206,8 +227,8 @@ measured <- tibble::tribble(
   "15-08-24", 1425L,    
   "20-08-24", NA,       
   "22-08-24", 986L
-) |> 
-  mutate(date = lubridate::as_date(date, format = "%d-%m-%y")) |> 
+) |>
+  mutate(date = lubridate::as_date(date, format = "%d-%m-%y")) |>
   filter(!is.na(adcp))
 
 # Bind together
@@ -238,7 +259,7 @@ all_m <-
   tidyr::pivot_wider(
     names_from = `type`,
     values_from = .estimate,
-    values_fn = ~ mw_round(.x)
+    values_fn = ~ round(.x, 2)
   ) |>
   rename(Raw = 2, DQM = 3) |>
   mutate(.metric = c("KGE'", "NSE", "pBIAS", "RMSE")) |>
