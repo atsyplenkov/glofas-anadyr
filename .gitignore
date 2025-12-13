@@ -7,3 +7,4 @@ out/paths.txt
 out/plot.png
 .env
 data/glofas/*.nc
+assets/
