@@ -14,6 +14,7 @@ From: rocker/geospatial:4.5.1
 %environment
     export LC_ALL=C
     export RENV_PATHS_LIBRARY="/renvlib"
+    export RENV_PATHS_CACHE="/renvcache"
     export RENV_PATHS_LOCKFILE="/renv.lock"
     export R_LIBS_USER="/renvlib"
     export R_PROFILE_USER="/.Rprofile"
@@ -35,6 +36,16 @@ From: rocker/geospatial:4.5.1
     
     # Install renv and pak
     R --quiet -e 'install.packages("renv")'
+    
+    # Create cache directory and pre-populate with system packages
+    mkdir -p /renvcache
+    
+    # Hydrate all system packages into cache - renv will only use what's needed
+    R --quiet --no-save -e '
+    system_pkgs <- rownames(installed.packages())
+    cat("Hydrating", length(system_pkgs), "packages from system library\n")
+    renv::hydrate(library = "/renvlib", packages = system_pkgs, update = FALSE, prompt = FALSE)
+    '
     
     # Restore packages using renv
     R --quiet -e 'renv::restore(lockfile = "/renv.lock", library = "/renvlib")'
