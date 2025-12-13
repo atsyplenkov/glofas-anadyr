@@ -101,7 +101,7 @@ annual_trends <-
   ) +
   labs(
     x = "",
-    y = "Mean annual water discharge, m³/s"
+    y = expression("Mean annual water discharge, m"^3 * "/s")
   ) +
   facet_wrap(~gauge_id, scales = "free") +
   theme(

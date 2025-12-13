@@ -103,7 +103,7 @@ ts_plots <-
   ) +
   labs(
     x = "",
-    y = "Water discharge, m³/s"
+    y = expression("Water discharge, m"^3 * "/s")
   ) +
   # facet_wrap(~gauge_id) +
   theme(

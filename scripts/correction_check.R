@@ -186,8 +186,8 @@ scatter_plots <-
         expand = expansion(mult = c(0, 0.01))
       ) +
       labs(
-        x = "Observed Q, m³/s",
-        y = "Predicted Q, m³/s"
+        x = expression("Observed Q, m"^3 * "/s"),
+        y = expression("Predicted Q, m"^3 * "/s")
       ) +
       facet_wrap(~gauge_id) +
       coord_fixed(ratio = 1, expand = FALSE) +
@@ -320,8 +320,8 @@ adcp_glofas <-
     labels = scales::number_format(big.mark = ",")
   ) +
   labs(
-    x = "Observed Q (ADCP), m³/s",
-    y = "Predicted Q, m³/s"
+    x = expression("Observed Q (ADCP), m"^3 * "/s"),
+    y = expression("Predicted Q, m"^3 * "/s")
   ) +
   theme(legend.position = "inside", legend.position.inside = c(0.75, 0.1))
 
