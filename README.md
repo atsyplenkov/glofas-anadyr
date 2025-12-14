@@ -31,7 +31,8 @@ The `Snakefile` is the backbone of the workflow. It defines the order of the ste
 │   ├── geometry    #  Gauging station locations
 │   ├── glofas      #  GloFAS-ERA5 grids
 │   ├── hydro       #  Pre-processed streamflow data
-│   └── raw         #  Raw streamflow data
+│   ├── models      #  Fitted DQM models (pickle files)
+│   └── raw         #  Raw streamflow data
 ├── scripts/        # Scripts directory, both R and Python
 ├── figures/        # Figures for the paper
 ├── tables/         # Tables for the paper
