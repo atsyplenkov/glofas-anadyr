@@ -4,6 +4,7 @@ import xarray as xr
 from pathlib import Path
 from os.path import dirname
 from xsdba import DetrendedQuantileMapping, Grouper
+import pickle
 import warnings
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -73,7 +74,19 @@ def as_xarray(data, value_col, datetime_col, name="Q"):
     )
     return da
 
-def correct_station(station_id, obs_dir, raw_dir, output_dir, n_quantiles):
+def save_dqm_model(dqm, station_id, models_dir):
+    models_path = Path(models_dir)
+    models_path.mkdir(parents=True, exist_ok=True)
+    
+    model_file = models_path / f"{station_id}_dqm.pkl"
+    try:
+        with open(model_file, "wb") as f:
+            pickle.dump(dqm, f)
+        print(f"  Station {station_id}: Saved DQM model to {model_file}")
+    except Exception as e:
+        print(f"  Station {station_id}: Error saving model - {e}")
+
+def correct_station(station_id, obs_dir, raw_dir, output_dir, n_quantiles, models_dir=None):
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
     
@@ -104,6 +117,9 @@ def correct_station(station_id, obs_dir, raw_dir, output_dir, n_quantiles):
             kind="*",
         )
         
+        if models_dir is not None:
+            save_dqm_model(dqm, station_id, models_dir)
+        
         corrected_da = dqm.adjust(all_sim_da)
         corrected_values = corrected_da.values
         
@@ -128,7 +144,8 @@ def correct_all_stations(
     obs_dir="data/hydro/obs",
     raw_dir="data/hydro/raw",
     output_dir="data/hydro/cor",
-    quantiles_map=None
+    quantiles_map=None,
+    models_dir="data/models"
 ):
     if stations is None:
         stations = list(QUANTILES_MAP.keys())
@@ -144,7 +161,7 @@ def correct_all_stations(
             print(f"  Station {station_id}: No quantiles specified, skipping")
             continue
         
-        correct_station(station_id, obs_dir, raw_dir, output_dir, n_quantiles)
+        correct_station(station_id, obs_dir, raw_dir, output_dir, n_quantiles, models_dir)
     
     print("Correction complete!")
 
@@ -162,7 +179,8 @@ if __name__ == "__main__":
             stations=stations,
             obs_dir=obs_dir,
             raw_dir=raw_dir,
-            output_dir=output_dir
+            output_dir=output_dir,
+            models_dir="data/models"
         )
     except NameError:
         # When run standalone
