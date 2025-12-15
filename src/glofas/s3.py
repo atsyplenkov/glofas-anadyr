@@ -70,38 +70,47 @@ def upload_incremental_to_s3(bucket: str, s3_client, gauge_id: int, new_data: pd
     try:
         metadata = get_s3_metadata(bucket, s3_client)
         if not metadata:
-            old_update_date = "2025-10-01" # TODO: Should this be a parameter or constant? Keeping from original code.
+            # If no metadata exists, we assume no previous update date.
+            # So we treat this as a fresh upload.
+            old_update_date = None
         else:
             old_update_date = metadata["last_update"]
         
-        old_key = f"timeseries/update_date={old_update_date}/{gauge_id}.parquet"
-        
-        try:
-            old_path = f"/tmp/{gauge_id}_old.parquet"
-            s3_client.download_file(bucket, old_key, old_path)
-            old_df = pd.read_parquet(old_path)
+        if old_update_date:
+            old_key = f"timeseries/update_date={old_update_date}/{gauge_id}.parquet"
             
-            if "q_obs" not in old_df.columns:
-                old_df["q_obs"] = None
-            
-            last_date = pd.to_datetime(old_df["date"]).max()
-            new_data["date"] = pd.to_datetime(new_data["date"])
-            new_data_filtered = new_data[new_data["date"] > last_date].copy()
-            
-            if new_data_filtered.empty:
-                print(f"No new data for gauge {gauge_id}")
+            try:
+                old_path = f"/tmp/{gauge_id}_old.parquet"
+                s3_client.download_file(bucket, old_key, old_path)
+                old_df = pd.read_parquet(old_path)
+                
+                if "q_obs" not in old_df.columns:
+                    old_df["q_obs"] = None
+                
+                last_date = pd.to_datetime(old_df["date"]).max()
+                new_data["date"] = pd.to_datetime(new_data["date"])
+                new_data_filtered = new_data[new_data["date"] > last_date].copy()
+                
+                if new_data_filtered.empty:
+                    print(f"No new data for gauge {gauge_id}")
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                    return
+                
+                if "q_obs" not in new_data_filtered.columns:
+                    new_data_filtered["q_obs"] = None
+                
+                combined_df = pd.concat([old_df, new_data_filtered]).sort_values("date")
+                combined_df = combined_df.drop_duplicates(subset=["date"], keep="last")
                 if os.path.exists(old_path):
                     os.remove(old_path)
-                return
-            
-            if "q_obs" not in new_data_filtered.columns:
-                new_data_filtered["q_obs"] = None
-            
-            combined_df = pd.concat([old_df, new_data_filtered]).sort_values("date")
-            combined_df = combined_df.drop_duplicates(subset=["date"], keep="last")
-            if os.path.exists(old_path):
-                os.remove(old_path)
-        except ClientError:
+            except ClientError:
+                # Failed to download old key, treat as new
+                combined_df = new_data.copy()
+                if "q_obs" not in combined_df.columns:
+                    combined_df["q_obs"] = None
+        else:
+            # First time upload
             combined_df = new_data.copy()
             if "q_obs" not in combined_df.columns:
                 combined_df["q_obs"] = None

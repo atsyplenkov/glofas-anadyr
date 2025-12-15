@@ -90,7 +90,7 @@ def loocv_splits(data: pd.DataFrame) -> List[Dict[str, Any]]:
             
     return splits
 
-def extract_glofas_at_gauges(nc_file: Path, gauges_gdf: gpd.GeoDataFrame) -> pd.DataFrame:
+def extract_glofas_at_gauges(nc_file: Path, gauges_gdf: gpd.GeoDataFrame, tz: str = "Asia/Kamchatka") -> pd.DataFrame:
     """Extract GloFAS discharge values at gauge locations."""
     try:
         ds = xr.open_dataset(nc_file)
@@ -122,20 +122,36 @@ def extract_glofas_at_gauges(nc_file: Path, gauges_gdf: gpd.GeoDataFrame) -> pd.
                 time_dim = "valid_time"
             
             if time_dim:
+                # Convert to series and handle timezone if present or assume UTC -> Kamchatka
+                # xarray often loads as datetime64[ns], usually UTC-like. 
+                # R script logic: with_tz(valid_time, tzone = tz)
+                
                 point_series = point_data.to_series()
+                
+                # Handling timezone
+                # If naive, assume UTC then convert. If aware, just convert.
+                
                 for time_val, dis24_val in point_series.items():
                     if pd.notna(dis24_val):
+                        ts = pd.to_datetime(time_val)
+                        if ts.tzinfo is None:
+                            ts = ts.tz_localize("UTC")
+                        ts = ts.tz_convert(tz)
+                        
                         results.append({
                             "gauge_id": gauge_id,
-                            "datetime": pd.to_datetime(time_val),
+                            "datetime": ts.strftime("%Y-%m-%d %H:%M:%S"), # Store as string or keep as timestamp? R saves as string in CSV.
                             "q_raw": float(dis24_val)
                         })
             else:
                 single_val = float(point_data.values)
                 if pd.notna(single_val):
-                    results.append({
+                     # If no time dimension, use current time converted to target TZ? 
+                     # Or keep "now" logic?
+                     ts = pd.Timestamp.now(tz=tz)
+                     results.append({
                         "gauge_id": gauge_id,
-                        "datetime": pd.to_datetime("now"),
+                        "datetime": ts.strftime("%Y-%m-%d %H:%M:%S"),
                         "q_raw": single_val
                     })
         except Exception as e:

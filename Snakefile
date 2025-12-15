@@ -87,7 +87,7 @@ rule extract_glofas:
     output:
         raw_files = RAW_FILES
     script:
-        "scripts/extract_glofas.R"
+        "scripts/extract_glofas.py"
 
 # Cross-validation -------------------------------------------------------------
 rule cv_glofas:
