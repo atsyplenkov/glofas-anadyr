@@ -3,5 +3,5 @@
   "description": "Reconstructing daily streamflow data for Anadyr River using GloFAS-ERA5 reanalysis",
   "github": "https://github.com/atsyplenkov/glofas-anadyr",
   "lastUpdated": "2025-12-15",
-  "baseUrl": ""
+  "baseUrl": "/glofas-anadyr"
 }
