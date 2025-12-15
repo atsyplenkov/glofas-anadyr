@@ -5,7 +5,8 @@ pagination:
   alias: gauge
 permalink: "gauges/{{ gauge.properties.id }}/"
 layout: gauge.njk
+eleventyComputed:
+  id: "{{ gauge.properties.id }}"
+  name: "{{ gauge.properties.name }}"
+  river: "{{ gauge.properties.river }}"
 ---
-{% set id = gauge.properties.id %}
-{% set name = gauge.properties.name %}
-{% set river = gauge.properties.river %}

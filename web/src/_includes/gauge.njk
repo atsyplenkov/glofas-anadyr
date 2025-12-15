@@ -13,8 +13,9 @@ layout: base.njk
 {% block scripts %}
 <script src="https://unpkg.com/dygraphs@2.2.1/dist/dygraph.min.js"></script>
 <script>
-  const gaugeId = "{{ id }}";
-  const gaugeName = "{{ name }}";
+  window.gaugeId = "{{ id }}";
+  window.gaugeName = "{{ name }}";
+  console.log('Gauge ID set:', window.gaugeId);
 </script>
 <script src="/assets/js/chart.js"></script>
 {% endblock %}
