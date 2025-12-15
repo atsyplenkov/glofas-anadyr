@@ -32,6 +32,14 @@ async function loadChart() {
     row[3]
   ]);
 
+  const formatDate = d => {
+    const date = new Date(d);
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
   new Dygraph(document.getElementById('chart'), data, {
     labels: ['Date', 'Observed', 'Raw GloFAS', 'Corrected'],
     title: window.gaugeId,
@@ -50,6 +58,11 @@ async function loadChart() {
     highlightSeriesOpts: {
       strokeWidth: 2.5,
       highlightCircleSize: 5
+    },
+    axes: {
+      x: {
+        valueFormatter: d => formatDate(d),
+      }
     }
   });
 }
