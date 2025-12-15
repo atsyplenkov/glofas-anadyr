@@ -73,7 +73,7 @@
         "obs_start": "1978-06-01",
         "obs_end": "1990-10-31",
         "missing_pct": 62.2,
-        "kge_raw": "0.577",
+        "kge_raw": "0.578",
         "kge_dqm": "0.641"
       },
       "geometry": {
@@ -94,7 +94,7 @@
         "obs_end": "1990-10-31",
         "missing_pct": 58.8,
         "kge_raw": "0.638",
-        "kge_dqm": "0.765"
+        "kge_dqm": "0.763"
       },
       "geometry": {
         "type": "Point",
