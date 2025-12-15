@@ -1,7 +1,8 @@
 # Reconstructing daily streamflow data for Anadyr River using GloFAS-ERA5 reanalysis
 
 <p align="center">
-     <a href="https://github.com/atsyplenkov/glofas-anadyr/.github/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/atsyplenkov/glofas-anadyr/ci.yml?style=flat&labelColor=1C2C2E&color=039475&logo=GitHub%20Actions&logoColor=white&label=CI"></a>
+     <a href="https://atsyplenkov.github.io/glofas-anadyr/"><img src="https://img.shields.io/website?url=https%3A%2F%2Fatsyplenkov.github.io%2Fglofas-anadyr%2F&style=flat&labelColor=1e2c2e&color=007ACC&logo=Visual%20Studio%20Code&logoColor=white"></a>
+     <a href="https://github.com/atsyplenkov/glofas-anadyr/.github/workflows/cd.yml"><img src="https://img.shields.io/github/actions/workflow/status/atsyplenkov/glofas-anadyr/cd.yml?style=flat&labelColor=1C2C2E&color=039475&logo=GitHub%20Actions&logoColor=white&label=CD"></a>
 </p>
 
 Repository contains code and data to reproduce the results of the paper "Reconstructing daily streamflow data for Anadyr River using GloFAS-ERA5 reanalysis" submitted to the journal "GEOGRAPHY, ENVIRONMENT, SUSTAINABILITY". To cite this work, please use the following citation:
