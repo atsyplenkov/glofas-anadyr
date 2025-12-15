@@ -81,18 +81,6 @@ footer {
   text-decoration: none;
 }
 
-.footer-github {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.footer-github svg {
-  width: 1rem;
-  height: 1rem;
-  fill: currentColor;
-}
-
 .footer-content a:hover {
   color: var(--primary);
 }
