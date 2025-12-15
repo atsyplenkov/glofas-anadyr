@@ -4,18 +4,20 @@ layout: base.njk
 
 <div class="gauge-container">
   <div class="gauge-header">
-    <h1>{{ name }} <span class="river">({{ river }})</span></h1>
+    <h1>{{ id }}</h1>
+    <p class="river">{{ river }} — {{ name }}</p>
   </div>
+
   <div id="chart"></div>
-  <button class="download-btn" onclick="downloadCSV()">Download Corrected CSV</button>
+
+  <button class="download-btn" onclick="downloadCSV()">Download Corrected Timeseries (CSV)</button>
 </div>
+
+<script>
+  window.gaugeId = {{ id }};
+</script>
 
 {% block scripts %}
 <script src="https://unpkg.com/dygraphs@2.2.1/dist/dygraph.min.js"></script>
-<script>
-  window.gaugeId = "{{ id }}";
-  window.gaugeName = "{{ name }}";
-  console.log('Gauge ID set:', window.gaugeId);
-</script>
 <script src="/assets/js/chart.js"></script>
 {% endblock %}

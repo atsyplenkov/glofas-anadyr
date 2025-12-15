@@ -12,3 +12,4 @@ web/node_modules/
 web/package-lock.json
 web/dist/
 web/src/_data/timeseries
+web/src/_data/gauges.json

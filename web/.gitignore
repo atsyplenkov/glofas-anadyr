@@ -1,0 +1,5 @@
+node_modules/
+dist/
+src/_data/gauges.json
+src/_data/timeseries/
+src/_data/last_update.json
