@@ -1,0 +1,20 @@
+---
+layout: base.njk
+---
+
+<div class="gauge-container">
+  <div class="gauge-header">
+    <h1>{{ name }} <span class="river">({{ river }})</span></h1>
+  </div>
+  <div id="chart"></div>
+  <button class="download-btn" onclick="downloadCSV()">Download Corrected CSV</button>
+</div>
+
+{% block scripts %}
+<script src="https://unpkg.com/dygraphs@2.2.1/dist/dygraph.min.js"></script>
+<script>
+  const gaugeId = "{{ id }}";
+  const gaugeName = "{{ name }}";
+</script>
+<script src="/assets/js/chart.js"></script>
+{% endblock %}

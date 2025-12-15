@@ -1,0 +1,11 @@
+---
+pagination:
+  data: gauges.features
+  size: 1
+  alias: gauge
+permalink: "gauges/{{ gauge.properties.id }}/"
+layout: gauge.njk
+---
+{% set id = gauge.properties.id %}
+{% set name = gauge.properties.name %}
+{% set river = gauge.properties.river %}
