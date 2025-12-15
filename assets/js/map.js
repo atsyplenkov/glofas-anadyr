@@ -1,5 +1,16 @@
 const baseUrl = window.baseUrl || "";
-const dataUrl = `${baseUrl}/_data/gauges.json`;
+
+async function fetchWithFallback(urls) {
+  for (const url of urls) {
+    try {
+      const res = await fetch(url);
+      if (res.ok) return res;
+    } catch (_) {
+      /* ignore and try next */
+    }
+  }
+  throw new Error(`Failed to load gauges data from ${urls.join(", ")}`);
+}
 
 const map = new maplibregl.Map({
   container: 'map',
@@ -11,7 +22,10 @@ const map = new maplibregl.Map({
 map.addControl(new maplibregl.NavigationControl());
 
 map.on('load', async () => {
-  const response = await fetch(dataUrl);
+  const response = await fetchWithFallback([
+    `${baseUrl}/_data/gauges.json`,
+    '/_data/gauges.json'
+  ]);
   const geojson = await response.json();
 
   map.addSource('gauges', {

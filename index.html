@@ -45,12 +45,17 @@
 
   <script>
     (function () {
-      let base = "/glofas-anadyr".trim();
-      base = base.replace(/\/+$/, "");
-      if (base && !base.startsWith("/")) {
-        base = "/" + base;
-      }
-      window.baseUrl = base;
+      const configured = "/glofas-anadyr".trim() || "/glofas-anadyr";
+      const normalize = (val) => {
+        let base = (val || "").trim().replace(/\/+$/, "");
+        if (base && !base.startsWith("/")) base = "/" + base;
+        return base === "/" ? "" : base;
+      };
+      const guessFromPath = () => {
+        const parts = window.location.pathname.split("/").filter(Boolean);
+        return parts.length ? `/${parts[0]}` : "";
+      };
+      window.baseUrl = normalize(configured) || normalize(guessFromPath());
     })();
   </script>
   

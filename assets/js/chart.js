@@ -3,8 +3,25 @@ let chartData = null;
 async function loadChart() {
   const gaugeId = window.gaugeId;
   const baseUrl = window.baseUrl || "";
-  const dataUrl = `${baseUrl}/_data/timeseries/${gaugeId}.json`;
-  const response = await fetch(dataUrl);
+  const urls = [
+    `${baseUrl}/_data/timeseries/${gaugeId}.json`,
+    `/_data/timeseries/${gaugeId}.json`
+  ];
+
+  let response = null;
+  for (const url of urls) {
+    try {
+      const res = await fetch(url);
+      if (res.ok) {
+        response = res;
+        break;
+      }
+    } catch (_) {
+      /* try next */
+    }
+  }
+
+  if (!response) throw new Error('Failed to load timeseries data');
   const json = await response.json();
   chartData = json;
 
