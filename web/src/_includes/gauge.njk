@@ -19,5 +19,5 @@ layout: base.njk
 
 {% block scripts %}
 <script src="https://unpkg.com/dygraphs@2.2.1/dist/dygraph.min.js"></script>
-<script src="{{ site.baseUrl | default('') }}/assets/js/chart.js"></script>
+<script src="{{ '/assets/js/chart.js' | url }}"></script>
 {% endblock %}
