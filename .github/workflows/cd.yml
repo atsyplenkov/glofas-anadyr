@@ -1,6 +1,12 @@
 name: Update Website
 
 on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
   schedule:
     - cron: '0 6 * * 0'  # Weekly Sunday 6 AM UTC
   workflow_dispatch:
@@ -11,17 +17,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: "Set up Python"
+        uses: actions/setup-python@v6
         with:
-          python-version: '3.12'
+          python-version-file: "pyproject.toml"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.0"
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22.21.0'
 
-      #TODO: use uv
-      - name: Install Python deps
-        run: pip install pandas pyarrow boto3
+      - name: Install the project
+        run: uv sync --locked --all-extras --dev
 
       - name: Pull data from S3 and generate JSON
         env:
@@ -29,7 +40,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           S3_BUCKET: ${{ secrets.S3_BUCKET }}
           ENDPOINT_URL: ${{ secrets.ENDPOINT_URL }}
-        run: python web/build.py
+        run: uv run web/build.py
 
       - name: Build 11ty site
         working-directory: web
