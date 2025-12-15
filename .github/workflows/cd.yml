@@ -49,8 +49,9 @@ jobs:
           npm ci
           npm run build
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Deploy to GitHub pages 🚀
+        uses: JamesIves/github-pages-deploy-action@v4.5.0
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./web/dist
+          clean: false
+          branch: gh-pages
+          folder: web/dist
