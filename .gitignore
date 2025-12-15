@@ -7,7 +7,6 @@ out/paths.txt
 out/plot.png
 .env
 data/glofas/*.nc
-assets/
 web/node_modules/
 web/dist/
 web/src/_data/timeseries
