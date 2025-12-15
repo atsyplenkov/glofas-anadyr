@@ -34,16 +34,16 @@ def load_gauge_data(gauge_id: int) -> pd.DataFrame:
     return df[["date", "gauge_id", "q_obs", "q_raw", "q_cor"]]
 
 
-def upload_to_s3(bucket: str, prefix: str, update_date: str):
+def upload_to_s3(bucket: str, update_date: str):
     """Upload parquet files to S3."""
-    s3 = boto3.client("s3")
+    s3 = boto3.client("s3", endpoint_url=os.environ["ENDPOINT_URL"])
 
     for gauge_id in GAUGE_IDS:
         df = load_gauge_data(gauge_id)
         parquet_path = f"/tmp/{gauge_id}.parquet"
         df.to_parquet(parquet_path, index=False)
 
-        s3_key = f"{prefix}/timeseries/update_date={update_date}/{gauge_id}.parquet"
+        s3_key = f"timeseries/update_date={update_date}/{gauge_id}.parquet"
         s3.upload_file(parquet_path, bucket, s3_key)
         print(f"Uploaded {s3_key}")
         os.remove(parquet_path)
@@ -52,22 +52,21 @@ def upload_to_s3(bucket: str, prefix: str, update_date: str):
     metadata_path = "/tmp/metadata.json"
     with open(metadata_path, "w") as f:
         json.dump(metadata, f)
-    s3.upload_file(metadata_path, bucket, f"{prefix}/metadata.json")
-    print(f"Uploaded {prefix}/metadata.json")
+    s3.upload_file(metadata_path, bucket, f"metadata.json")
+    print(f"Uploaded metadata.json")
     os.remove(metadata_path)
 
 
 def main():
-    required_env = ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "S3_BUCKET"]
+    required_env = ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "S3_BUCKET", "ENDPOINT_URL"]
     missing = [v for v in required_env if not os.environ.get(v)]
     if missing:
         raise ValueError(f"Missing environment variables: {', '.join(missing)}")
 
     bucket = os.environ["S3_BUCKET"]
-    prefix = "glofas-anadyr"
     update_date = date.today().isoformat()
 
-    upload_to_s3(bucket, prefix, update_date)
+    upload_to_s3(bucket, update_date)
     print(f"Upload complete: {update_date}")
 
 
