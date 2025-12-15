@@ -8,6 +8,21 @@
   <link rel="stylesheet" href="/glofas-anadyr/assets/css/style.css">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.css">
   <link rel="stylesheet" href="https://unpkg.com/dygraphs@2.2.1/dist/dygraph.css">
+  <script>
+    (function () {
+      const configured = "/glofas-anadyr".trim() || "/glofas-anadyr";
+      const normalize = (val) => {
+        let base = (val || "").trim().replace(/\/+$/, "");
+        if (base && !base.startsWith("/")) base = "/" + base;
+        return base === "/" ? "" : base;
+      };
+      const guessFromPath = () => {
+        const parts = window.location.pathname.split("/").filter(Boolean);
+        return parts.length ? `/${parts[0]}` : "";
+      };
+      window.baseUrl = normalize(configured) || normalize(guessFromPath());
+    })();
+  </script>
   
 </head>
 <body>
@@ -53,21 +68,6 @@
     </div>
   </footer>
 
-  <script>
-    (function () {
-      const configured = "/glofas-anadyr".trim() || "/glofas-anadyr";
-      const normalize = (val) => {
-        let base = (val || "").trim().replace(/\/+$/, "");
-        if (base && !base.startsWith("/")) base = "/" + base;
-        return base === "/" ? "" : base;
-      };
-      const guessFromPath = () => {
-        const parts = window.location.pathname.split("/").filter(Boolean);
-        return parts.length ? `/${parts[0]}` : "";
-      };
-      window.baseUrl = normalize(configured) || normalize(guessFromPath());
-    })();
-  </script>
   
 </body>
 </html>
