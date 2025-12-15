@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ title or site.title }}</title>
   <meta name="description" content="{{ site.description }}">
-  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="{{ site.baseUrl | default('') }}/assets/css/style.css">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.css">
   <link rel="stylesheet" href="https://unpkg.com/dygraphs@2.2.1/dist/dygraph.css">
   {% block head %}{% endblock %}
@@ -13,10 +13,10 @@
 <body>
   <header>
     <nav>
-      <a href="/" class="logo">{{ site.title }}</a>
+      <a href="{{ site.baseUrl | default('') }}/" class="logo">{{ site.title }}</a>
       <div class="nav-links">
-        <a href="/">Main</a>
-        <a href="/about/">About</a>
+        <a href="{{ site.baseUrl | default('') }}/">Main</a>
+        <a href="{{ site.baseUrl | default('') }}/about/">About</a>
       </div>
     </nav>
   </header>
@@ -33,6 +33,16 @@
     </div>
   </footer>
 
+  <script>
+    (function () {
+      let base = "{{ site.baseUrl | default('') }}".trim();
+      base = base.replace(/\/+$/, "");
+      if (base && !base.startsWith("/")) {
+        base = "/" + base;
+      }
+      window.baseUrl = base;
+    })();
+  </script>
   {% block scripts %}{% endblock %}
 </body>
 </html>
