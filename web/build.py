@@ -433,6 +433,21 @@ def generate_timeseries_json(gauge_id: int, df: pd.DataFrame) -> dict:
     return {"id": gauge_id, "name": info["name"], "river": info["river"], "data": data}
 
 
+def normalize_base_url(value: str) -> str:
+    """Normalize the base URL for site asset references."""
+    if value is None:
+        return ""
+    base = value.strip()
+    if not base:
+        return ""
+    base = base.rstrip("/")
+    if not base.startswith("/"):
+        base = f"/{base}"
+    if base == "/":
+        return ""
+    return base
+
+
 def update_s3_metadata(bucket: str, s3_client, update_date: str):
     """Update metadata.json in S3."""
     metadata = {
@@ -577,6 +592,10 @@ def main():
         with open(site_json_path) as f:
             site_data = json.load(f)
         site_data["lastUpdated"] = update_date
+        env_base = os.environ.get("SITE_BASE_URL")
+        existing_base = site_data.get("baseUrl", "")
+        resolved_base = env_base if env_base is not None else existing_base
+        site_data["baseUrl"] = normalize_base_url(resolved_base)
         with open(site_json_path, "w") as f:
             json.dump(site_data, f, indent=2)
     

@@ -17,6 +17,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      SITE_BASE_URL: /glofas-anadyr
     steps:
       - uses: actions/checkout@v4
 

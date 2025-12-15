@@ -33,6 +33,16 @@
     </div>
   </footer>
 
+  <script>
+    (function () {
+      let base = "{{ site.baseUrl | default('') }}".trim();
+      base = base.replace(/\/+$/, "");
+      if (base && !base.startsWith("/")) {
+        base = "/" + base;
+      }
+      window.baseUrl = base;
+    })();
+  </script>
   {% block scripts %}{% endblock %}
 </body>
 </html>
