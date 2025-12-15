@@ -11,3 +11,5 @@ web/node_modules/
 web/dist/
 web/src/_data/timeseries
 web/src/_data/gauges.json
+
+__pycache__/
