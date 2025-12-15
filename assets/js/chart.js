@@ -32,21 +32,37 @@ async function loadChart() {
     row[3]
   ]);
 
+  const formatDate = d => {
+    const date = new Date(d);
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
   new Dygraph(document.getElementById('chart'), data, {
     labels: ['Date', 'Observed', 'Raw GloFAS', 'Corrected'],
     title: window.gaugeId,
     ylabel: 'Daily water discharge, cms',
     showRangeSelector: true,
+    // See https://stackoverflow.com/questions/34695490/dygraphs-how-to-use-both-range-selector-and-manual-zooming
+    interactionModel: Dygraph.defaultInteractionModel,
     colors: ['#1f77b4', '#ff7f0e', '#2ca02c'],
     strokeWidth: 1.5,
     connectSeparatedPoints: false,
     drawPoints: false,
     legend: 'always',
+    animatedZoom: true,
     labelsSeparateLines: true,
     highlightCircleSize: 4,
     highlightSeriesOpts: {
       strokeWidth: 2.5,
       highlightCircleSize: 5
+    },
+    axes: {
+      x: {
+        valueFormatter: d => formatDate(d),
+      }
     }
   });
 }
