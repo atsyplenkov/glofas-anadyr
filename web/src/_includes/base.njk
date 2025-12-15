@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title or site.title }}</title>
+  <meta name="description" content="{{ site.description }}">
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="https://unpkg.com/dygraphs@2.2.1/dist/dygraph.css">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="/" class="logo">{{ site.title }}</a>
+      <div class="nav-links">
+        <a href="/">Main</a>
+        <a href="/about/">About</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    {% block content %}{{ content | safe }}{% endblock %}
+  </main>
+
+  <footer>
+    <div class="footer-content">
+      <a href="{{ site.github }}" target="_blank" rel="noopener">GitHub</a>
+      <span>Last updated: {{ site.lastUpdated or "—" }}</span>
+      <span>© 2025</span>
+    </div>
+  </footer>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

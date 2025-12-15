@@ -1,0 +1,23 @@
+---
+layout: base.njk
+---
+
+<div class="gauge-container">
+  <div class="gauge-header">
+    <h1>{{ id }}</h1>
+    <p class="river">{{ river }} — {{ name }}</p>
+  </div>
+
+  <div id="chart"></div>
+
+  <button class="download-btn" onclick="downloadCSV()">Download Corrected Timeseries (CSV)</button>
+</div>
+
+<script>
+  window.gaugeId = {{ id }};
+</script>
+
+{% block scripts %}
+<script src="https://unpkg.com/dygraphs@2.2.1/dist/dygraph.min.js"></script>
+<script src="/assets/js/chart.js"></script>
+{% endblock %}

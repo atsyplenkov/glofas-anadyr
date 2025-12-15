@@ -1,0 +1,56 @@
+name: Update Website
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  schedule:
+    - cron: '0 6 * * 0'  # Weekly Sunday 6 AM UTC
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: "pyproject.toml"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.0"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.21.0'
+
+      - name: Install the project
+        run: uv sync --locked --all-extras --dev
+
+      - name: Pull data from S3 and generate JSON
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          ENDPOINT_URL: ${{ secrets.ENDPOINT_URL }}
+          ECMWF_TOKEN: ${{ secrets.ECMWF_TOKEN }}
+        run: uv run web/build.py
+
+      - name: Build 11ty site
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./web/dist

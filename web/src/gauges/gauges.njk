@@ -1,0 +1,12 @@
+---
+pagination:
+  data: gauges.features
+  size: 1
+  alias: gauge
+permalink: "gauges/{{ gauge.properties.id }}/"
+layout: gauge.njk
+eleventyComputed:
+  id: "{{ gauge.properties.id }}"
+  name: "{{ gauge.properties.name }}"
+  river: "{{ gauge.properties.river }}"
+---
