@@ -4,8 +4,8 @@ async function loadChart() {
   const gaugeId = window.gaugeId;
   const baseUrl = window.baseUrl || "";
   const urls = [
-    `${baseUrl}/_data/timeseries/${gaugeId}.json`,
-    `/_data/timeseries/${gaugeId}.json`
+    `${baseUrl}/data/timeseries/${gaugeId}.json`,
+    `/data/timeseries/${gaugeId}.json`
   ];
 
   let response = null;
