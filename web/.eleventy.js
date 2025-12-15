@@ -9,6 +9,7 @@ module.exports = function (eleventyConfig) {
       output: "dist",
       includes: "_includes",
       data: "_data"
-    }
+    },
+    pathPrefix: "/glofas-anadyr/"
   };
 };
