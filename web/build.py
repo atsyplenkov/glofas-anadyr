@@ -67,19 +67,19 @@ def load_local_data(gauge_id: int) -> pd.DataFrame:
     return df.sort_values("date")
 
 
-def download_from_s3(bucket: str, prefix: str) -> dict:
+def download_from_s3(bucket: str) -> dict:
     """Download parquet files from S3 and return as dict of DataFrames."""
-    s3 = boto3.client("s3")
+    s3 = boto3.client("s3", endpoint_url=os.environ["ENDPOINT_URL"])
 
     # Get latest update date from metadata
-    metadata_obj = s3.get_object(Bucket=bucket, Key=f"{prefix}/metadata.json")
+    metadata_obj = s3.get_object(Bucket=bucket, Key="metadata.json")
     metadata = json.loads(metadata_obj["Body"].read())
     update_date = metadata["last_update"]
     gauges = metadata["gauges"]
 
     data = {"update_date": update_date, "gauges": {}}
     for gauge_id in gauges:
-        key = f"{prefix}/timeseries/update_date={update_date}/{gauge_id}.parquet"
+        key = f"timeseries/update_date={update_date}/{gauge_id}.parquet"
         local_path = f"/tmp/{gauge_id}.parquet"
         s3.download_file(bucket, key, local_path)
         data["gauges"][gauge_id] = pd.read_parquet(local_path)
@@ -151,6 +151,7 @@ def main():
     bucket = os.environ.get("S3_BUCKET")
     aws_key = os.environ.get("AWS_ACCESS_KEY_ID")
     aws_secret = os.environ.get("AWS_SECRET_ACCESS_KEY")
+    endpoint = os.environ.get("ENDPOINT_URL")
     update_date = date.today().isoformat()
 
     # Load CV results
@@ -158,12 +159,12 @@ def main():
 
     # Try S3, fall back to local
     gauge_data = {}
-    use_s3 = bucket and aws_key and aws_secret
+    use_s3 = bucket and aws_key and aws_secret and endpoint
     if bucket and not use_s3:
-        print("Warning: S3_BUCKET set but missing AWS credentials, using local data")
+        print("Warning: S3_BUCKET set but missing AWS credentials or ENDPOINT_URL, using local data")
     if use_s3:
         try:
-            s3_data = download_from_s3(bucket, "glofas-anadyr")
+            s3_data = download_from_s3(bucket)
             update_date = s3_data["update_date"]
             gauge_data = s3_data["gauges"]
         except Exception as e:
