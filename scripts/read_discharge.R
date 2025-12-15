@@ -123,7 +123,7 @@ anadyr_na <-
       id,
       levels = lookup$id,
       labels = glue::glue(
-        "{lookup$river_en} — {lookup$name_en} ({lookup$id})"
+        "{lookup$river_en} - {lookup$name_en} ({lookup$id})"
       )
     )
   ) |>
