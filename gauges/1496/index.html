@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GloFAS Anadyr</title>
+  <meta name="description" content="Reconstructing daily streamflow data for Anadyr River using GloFAS-ERA5 reanalysis">
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="https://unpkg.com/dygraphs@2.2.1/dist/dygraph.css">
+  
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="/" class="logo">GloFAS Anadyr</a>
+      <div class="nav-links">
+        <a href="/">Main</a>
+        <a href="/about/">About</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    
+<div class="gauge-container">
+  <div class="gauge-header">
+    <h1>1496</h1>
+    <p class="river">Anadyr — Lamutskoe</p>
+  </div>
+
+  <div id="chart"></div>
+
+  <button class="download-btn" onclick="downloadCSV()">Download Corrected Timeseries (CSV)</button>
+</div>
+
+<script>
+  window.gaugeId = 1496;
+</script>
+
+
+<script src="https://unpkg.com/dygraphs@2.2.1/dist/dygraph.min.js"></script>
+<script src="/assets/js/chart.js"></script>
+
+
+  </main>
+
+  <footer>
+    <div class="footer-content">
+      <a href="https://github.com/atsyplenkov/glofas-anadyr" target="_blank" rel="noopener">GitHub</a>
+      <span>Last updated: 2025-12-15</span>
+      <span>© 2025</span>
+    </div>
+  </footer>
+
+  
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About - GloFAS Anadyr</title>
+  <meta name="description" content="Reconstructing daily streamflow data for Anadyr River using GloFAS-ERA5 reanalysis">
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="https://unpkg.com/dygraphs@2.2.1/dist/dygraph.css">
+  
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="/" class="logo">GloFAS Anadyr</a>
+      <div class="nav-links">
+        <a href="/">Main</a>
+        <a href="/about/">About</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <div class="about-container">
+<h1>Reconstructing daily streamflow data for Anadyr River using GloFAS-ERA5 reanalysis</h1>
+<p>Repository contains code and data to reproduce the results of the paper &quot;Reconstructing daily streamflow data for Anadyr River using GloFAS-ERA5 reanalysis&quot; submitted to the journal &quot;GEOGRAPHY, ENVIRONMENT, SUSTAINABILITY&quot;.</p>
+<blockquote>
+<p><em>Tsyplenkov A., Shkolnyi D., Kravchenko A., Golovlev P.</em> Reconstructing daily streamflow data for Anadyr River using GloFAS-ERA5 reanalysis. GEOGRAPHY, ENVIRONMENT, SUSTAINABILITY. 2026 (<em>In Review</em>)</p>
+</blockquote>
+<h2>Abstract</h2>
+<p>The Anadyr River is the largest river system in the Russian Far East with no water discharge observations available since 1996. The current study addresses this data scarcity by reconstructing daily streamflow series for the period 1979–2025 using the GloFAS-ERA5 v4.0 reanalysis product. To mitigate systematic model biases, we applied the Detrended Quantile Mapping correction method, optimised via a Leave-One-Out Cross-Validation strategy using historical gauging records and recent in-situ ADCP water discharge measurements.</p>
+<p>The bias-correction procedure yielded a meaningful improvement in predictive performance, increasing the median Modified Kling-Gupta Efficiency by approximately 17% across the basin. Notably, the cross-validation analysis revealed that for stations previously used in initial global model calibration, a parsimonious linear scaling approach (with one quantile only) outperformed complex non-linear mapping, thereby preventing overfitting. The reconstructed long-term time series reveals a robust, statistically significant increasing trend in mean annual water discharge across the basin (up to 0.5% per year). These findings align the Anadyr River with the broader pattern of hydrological intensification observed across the Eurasian Arctic, likely driven by a shift in precipitation regimes from snow to rain during the shoulder seasons.</p>
+<p>This research demonstrates that bias-corrected global reanalysis offers a reliable alternative to ground-based monitoring in data-scarce Arctic environments.</p>
+<h2>Source Code</h2>
+<p>The full source code and data are available on <a href="https://github.com/atsyplenkov/glofas-anadyr">GitHub</a>.</p>
+</div>
+
+  </main>
+
+  <footer>
+    <div class="footer-content">
+      <a href="https://github.com/atsyplenkov/glofas-anadyr" target="_blank" rel="noopener">GitHub</a>
+      <span>Last updated: 2025-12-15</span>
+      <span>© 2025</span>
+    </div>
+  </footer>
+
+  
+</body>
+</html>

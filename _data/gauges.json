@@ -1,0 +1,148 @@
+{
+  "type": "FeatureCollection",
+  "properties": {
+    "lastUpdated": "2025-12-15"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 1496,
+        "name": "Lamutskoe",
+        "river": "Anadyr",
+        "obs_start": "1978-06-01",
+        "obs_end": "1990-10-30",
+        "missing_pct": 60.5,
+        "kge_raw": "0.571",
+        "kge_dqm": "0.755"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          168.868195111111,
+          65.55792480555559
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 1497,
+        "name": "Novyy Yeropol",
+        "river": "Anadyr",
+        "obs_start": "1958-01-01",
+        "obs_end": "1996-12-31",
+        "missing_pct": 6.0,
+        "kge_raw": "0.708",
+        "kge_dqm": "0.748"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          168.74044325,
+          64.84445925
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 1499,
+        "name": "Snezhnoe",
+        "river": "Anadyr",
+        "obs_start": "1958-01-01",
+        "obs_end": "1993-08-31",
+        "missing_pct": 5.9,
+        "kge_raw": "0.859",
+        "kge_dqm": "0.839"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          172.9356813472321,
+          65.43040789253637
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 1502,
+        "name": "Chuvanskoe",
+        "river": "Yeropol",
+        "obs_start": "1978-06-01",
+        "obs_end": "1990-10-31",
+        "missing_pct": 62.2,
+        "kge_raw": "0.577",
+        "kge_dqm": "0.641"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          167.955277888889,
+          65.1809386944445
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 1504,
+        "name": "Vayegi",
+        "river": "Mayn",
+        "obs_start": "1979-05-21",
+        "obs_end": "1990-10-31",
+        "missing_pct": 58.8,
+        "kge_raw": "0.638",
+        "kge_dqm": "0.765"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          171.064252833333,
+          64.16331699999999
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 1508,
+        "name": "Mukhomornoe",
+        "river": "Enmyvaam",
+        "obs_start": "1980-01-01",
+        "obs_end": "1994-12-31",
+        "missing_pct": 8.4,
+        "kge_raw": "0.519",
+        "kge_dqm": "0.754"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          173.340203222222,
+          66.39800291666668
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 1587,
+        "name": "Tanyurer",
+        "river": "Tanyurer",
+        "obs_start": "1979-06-13",
+        "obs_end": "1990-10-10",
+        "missing_pct": 61.9,
+        "kge_raw": "0.611",
+        "kge_dqm": "0.680"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          174.388533611111,
+          64.8584099444444
+        ]
+      }
+    }
+  ]
+}
