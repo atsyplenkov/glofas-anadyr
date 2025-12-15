@@ -5,134 +5,19 @@ from pathlib import Path
 from os.path import dirname
 from xsdba import DetrendedQuantileMapping, Grouper
 from concurrent.futures import ProcessPoolExecutor, as_completed
-import hydroeval as he
 import warnings
+import sys
+
+# Add src to python path
+PROJECT_ROOT = Path(__file__).parent.parent
+sys.path.append(str(PROJECT_ROOT / "src"))
+
+from glofas.io import read_station_data_cv
+from glofas.process import loocv_splits, as_xarray, calculate_metrics
+from glofas.config import GAUGE_IDS
 
 # Suppress divide by zero warnings in logs
 warnings.filterwarnings("ignore", category=RuntimeWarning)
-
-def read_station_data(station_id, obs_dir, sim_dir):
-    """Read observed and simulated data for a station."""
-    obs_path = Path(obs_dir) / f"{station_id}.csv"
-    sim_path = Path(sim_dir) / f"{station_id}.csv"
-    
-    obs_df = pd.read_csv(obs_path, parse_dates=["date"])
-    sim_df = pd.read_csv(sim_path, parse_dates=["datetime"])
-    
-    sim_df["date"] = pd.to_datetime(sim_df["datetime"]).dt.date
-    # NOTE: Justification for -1 day lag must be included in the paper method section
-    # (e.g., "Simulations represent 00:00 UTC, effectively prev day average...")
-    sim_df["date"] = pd.to_datetime(sim_df["date"]) - pd.Timedelta(days=1)
-    
-    merged = obs_df.merge(sim_df, on="date", how="inner")
-    merged = merged[["date", "q_cms", "q_raw"]].copy()
-    merged = merged.rename(columns={"q_cms": "obs", "q_raw": "sim"})
-    merged = merged.dropna()
-    
-    merged["year"] = merged["date"].dt.year
-    merged["month"] = merged["date"].dt.month
-    
-    # Filter for Anadyr open water season (May-Sept)
-    merged = merged[
-        (merged["year"] >= 1979) & 
-        (merged["year"] <= 1996) &
-        (merged["month"].between(5, 10))
-    ].copy()
-    
-    # Add epsilon to handle zero flows in multiplicative correction and logs
-    epsilon = 0.01
-    merged["obs"] = merged["obs"] + epsilon
-    merged["sim"] = merged["sim"] + epsilon
-    
-    return merged
-
-def loocv_splits(data):
-    """
-    Generate Leave-One-Out (LOO) splits.
-    
-    Strategy:
-    1. Identify all years with sufficient data.
-    2. Iterate through each year:
-       - Test set: The specific year being iterated.
-       - Training set: All other years combined.
-    
-    This preserves the hydrograph structure (autocorrelation) within the test year
-    while maximizing the training data size.
-    """
-    # Filter for years that have enough data (e.g. > 90% of the season)
-    # Season is May-Sept (approx 153 days). Threshold ~130 days.
-    year_counts = data.groupby("year")["obs"].count()
-    valid_years = sorted(year_counts[year_counts > 90].index.tolist())
-    
-    splits = []
-    
-    # Need at least 2 years to do training/testing
-    if len(valid_years) < 2:
-        return splits
-
-    for test_year in valid_years:
-        # Train on everything EXCEPT the test year
-        train_years = [y for y in valid_years if y != test_year]
-        
-        train_mask = data["year"].isin(train_years)
-        test_mask = data["year"] == test_year
-        
-        train_data = data[train_mask].copy()
-        test_data = data[test_mask].copy()
-        
-        if len(train_data) > 0 and len(test_data) > 0:
-            splits.append({
-                "train": train_data,
-                "test": test_data,
-                "test_year": test_year,
-                "n_train_years": len(train_years)
-            })
-            
-    return splits
-
-def as_xarray(data, value_col, datetime_col, name="Q"):
-    """Convert DataFrame to xarray DataArray."""
-    da = xr.DataArray(
-        data[value_col].values,
-        coords={"time": pd.to_datetime(data[datetime_col].values)},
-        dims=["time"],
-        attrs={"units": "m3/s"},
-        name=name
-    )
-    return da
-
-def calculate_metrics(obs, sim):
-    """Calculate all required metrics."""
-    obs = np.array(obs).flatten()
-    sim = np.array(sim).flatten()
-    
-    mask = (obs > 0) & (sim > 0)
-    obs = obs[mask]
-    sim = sim[mask]
-    
-    if len(obs) < 10:
-        return None
-    
-    nse = he.evaluator(he.nse, sim, obs)
-    log_nse = he.evaluator(he.nse, np.log(sim), np.log(obs))
-    kge, r, alpha, beta = he.evaluator(he.kgeprime, sim, obs)
-    kgenp, r, alpha, beta = he.evaluator(he.kgenp, sim, obs)
-    pbias_val = he.evaluator(he.pbias, sim, obs)
-    rmse_val = he.evaluator(he.rmse, sim, obs)
-    
-    def to_scalar(val):
-        if isinstance(val, (np.ndarray, list)):
-            return float(val[0]) if len(val) > 0 else np.nan
-        return float(val)
-    
-    return {
-        "nse": to_scalar(nse),
-        "log_nse": to_scalar(log_nse),
-        "kgeprime": to_scalar(kge),
-        "kgenp": to_scalar(kgenp),
-        "pbias": to_scalar(pbias_val),
-        "rmse": to_scalar(rmse_val),
-    }
 
 def process_station(station_id, obs_dir, sim_dir, output_dir, quantiles_list):
     """Process a single station using LOYO-CV."""
@@ -141,7 +26,7 @@ def process_station(station_id, obs_dir, sim_dir, output_dir, quantiles_list):
     
     # print(f"Processing station {station_id}...")
     
-    data = read_station_data(station_id, obs_dir, sim_dir)
+    data = read_station_data_cv(station_id, Path(obs_dir), Path(sim_dir))
     if len(data) == 0:
         return station_id, "No Data"
     
@@ -269,5 +154,5 @@ if __name__ == "__main__":
         )
     except NameError:
         # When run standalone
-        stations = [1496, 1497, 1499, 1502, 1504, 1508, 1587]
+        stations = GAUGE_IDS
         cv_glofas(stations)

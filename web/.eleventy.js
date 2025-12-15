@@ -1,7 +1,7 @@
 module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy("src/assets");
-  eleventyConfig.addPassthroughCopy("src/_data/timeseries");
-  eleventyConfig.addPassthroughCopy("src/_data/gauges.json");
+  eleventyConfig.addPassthroughCopy({ "src/_data/timeseries": "data/timeseries" });
+  eleventyConfig.addPassthroughCopy({ "src/_data/gauges.json": "data/gauges.json" });
 
   return {
     dir: {

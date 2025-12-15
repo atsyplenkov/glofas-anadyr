@@ -23,8 +23,8 @@ map.addControl(new maplibregl.NavigationControl());
 
 map.on('load', async () => {
   const response = await fetchWithFallback([
-    `${baseUrl}/_data/gauges.json`,
-    '/_data/gauges.json'
+    `${baseUrl}/data/gauges.json`,
+    '/data/gauges.json'
   ]);
   const geojson = await response.json();
 

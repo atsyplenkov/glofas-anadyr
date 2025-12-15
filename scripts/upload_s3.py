@@ -1,45 +1,28 @@
 import os
-import json
+import sys
 from datetime import date
 from pathlib import Path
 
-import boto3
-import pandas as pd
+# Add src to python path
+PROJECT_ROOT = Path(__file__).parent.parent
+sys.path.append(str(PROJECT_ROOT / "src"))
+
 from dotenv import load_dotenv
+
+from glofas.config import GAUGE_IDS
+from glofas.s3 import get_s3_client, update_s3_metadata
+from glofas.io import load_gauge_data_all
 
 load_dotenv()
 
-DATA_DIR = Path(__file__).parent.parent / "data" / "hydro"
-GAUGE_IDS = [1496, 1497, 1499, 1502, 1504, 1508, 1587]
-
-
-def load_gauge_data(gauge_id: int) -> pd.DataFrame:
-    """Load and merge obs, raw, cor data for a gauge."""
-    obs_path = DATA_DIR / "obs" / f"{gauge_id}.csv"
-    raw_path = DATA_DIR / "raw" / f"{gauge_id}.csv"
-    cor_path = DATA_DIR / "cor" / f"{gauge_id}.csv"
-
-    obs = pd.read_csv(obs_path, parse_dates=["date"])
-    obs = obs.rename(columns={"q_cms": "q_obs"})
-
-    raw = pd.read_csv(raw_path, parse_dates=["datetime"])
-    raw["date"] = raw["datetime"].dt.normalize()
-    raw = raw.groupby("date")["q_raw"].mean().reset_index()
-
-    cor = pd.read_csv(cor_path, parse_dates=["date"])
-
-    df = obs.merge(raw, on="date", how="outer").merge(cor, on="date", how="outer")
-    df = df.sort_values("date")
-    df["gauge_id"] = gauge_id
-    return df[["date", "gauge_id", "q_obs", "q_raw", "q_cor"]]
-
-
 def upload_to_s3(bucket: str, update_date: str):
     """Upload parquet files to S3."""
-    s3 = boto3.client("s3", endpoint_url=os.environ["ENDPOINT_URL"])
+    s3 = get_s3_client()
 
     for gauge_id in GAUGE_IDS:
-        df = load_gauge_data(gauge_id)
+        # Load from default local location
+        df = load_gauge_data_all(gauge_id)
+        
         parquet_path = f"/tmp/{gauge_id}.parquet"
         df.to_parquet(parquet_path, index=False)
 
@@ -48,13 +31,8 @@ def upload_to_s3(bucket: str, update_date: str):
         print(f"Uploaded {s3_key}")
         os.remove(parquet_path)
 
-    metadata = {"last_update": update_date, "gauges": GAUGE_IDS}
-    metadata_path = "/tmp/metadata.json"
-    with open(metadata_path, "w") as f:
-        json.dump(metadata, f)
-    s3.upload_file(metadata_path, bucket, f"metadata.json")
+    update_s3_metadata(bucket, s3, update_date, GAUGE_IDS)
     print(f"Uploaded metadata.json")
-    os.remove(metadata_path)
 
 
 def main():
