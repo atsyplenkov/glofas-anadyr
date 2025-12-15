@@ -30,7 +30,7 @@
 
 
 <script src="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.js"></script>
-<script src="/assets/js/map.js"></script>
+<script src="/glofas-anadyr/assets/js/map.js"></script>
 
 
   </main>
@@ -43,6 +43,16 @@
     </div>
   </footer>
 
+  <script>
+    (function () {
+      let base = "/glofas-anadyr".trim();
+      base = base.replace(/\/+$/, "");
+      if (base && !base.startsWith("/")) {
+        base = "/" + base;
+      }
+      window.baseUrl = base;
+    })();
+  </script>
   
 </body>
 </html>

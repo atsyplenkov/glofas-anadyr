@@ -1,4 +1,5 @@
-const dataUrl = new URL('./_data/gauges.json', document.baseURI);
+const baseUrl = window.baseUrl || "";
+const dataUrl = `${baseUrl}/_data/gauges.json`;
 
 const map = new maplibregl.Map({
   container: 'map',
@@ -43,7 +44,7 @@ map.on('load', async () => {
         <strong>KGE' Raw:</strong> ${props.kge_raw || '—'}<br>
         <strong>KGE' DQM:</strong> ${props.kge_dqm || '—'}
       </div>
-      <a class="popup-link" href="${new URL(`./gauges/${props.id}/`, document.baseURI)}">View time series →</a>
+      <a class="popup-link" href="${baseUrl}/gauges/${props.id}/">View time series →</a>
     `;
 
     new maplibregl.Popup()

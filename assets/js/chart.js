@@ -2,7 +2,8 @@ let chartData = null;
 
 async function loadChart() {
   const gaugeId = window.gaugeId;
-  const dataUrl = new URL(`/_data/timeseries/${gaugeId}.json`, document.baseURI);
+  const baseUrl = window.baseUrl || "";
+  const dataUrl = `${baseUrl}/_data/timeseries/${gaugeId}.json`;
   const response = await fetch(dataUrl);
   const json = await response.json();
   chartData = json;

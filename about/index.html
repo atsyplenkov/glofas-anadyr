@@ -46,6 +46,16 @@
     </div>
   </footer>
 
+  <script>
+    (function () {
+      let base = "/glofas-anadyr".trim();
+      base = base.replace(/\/+$/, "");
+      if (base && !base.startsWith("/")) {
+        base = "/" + base;
+      }
+      window.baseUrl = base;
+    })();
+  </script>
   
 </body>
 </html>

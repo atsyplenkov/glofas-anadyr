@@ -40,7 +40,7 @@
 
 
 <script src="https://unpkg.com/dygraphs@2.2.1/dist/dygraph.min.js"></script>
-<script src="/assets/js/chart.js"></script>
+<script src="/glofas-anadyr/assets/js/chart.js"></script>
 
 
   </main>
@@ -53,6 +53,16 @@
     </div>
   </footer>
 
+  <script>
+    (function () {
+      let base = "/glofas-anadyr".trim();
+      base = base.replace(/\/+$/, "");
+      if (base && !base.startsWith("/")) {
+        base = "/" + base;
+      }
+      window.baseUrl = base;
+    })();
+  </script>
   
 </body>
 </html>
