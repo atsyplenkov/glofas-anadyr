@@ -37,11 +37,14 @@ async function loadChart() {
     title: window.gaugeId,
     ylabel: 'Daily water discharge, cms',
     showRangeSelector: true,
+    // See https://stackoverflow.com/questions/34695490/dygraphs-how-to-use-both-range-selector-and-manual-zooming
+    interactionModel: Dygraph.defaultInteractionModel,
     colors: ['#1f77b4', '#ff7f0e', '#2ca02c'],
     strokeWidth: 1.5,
     connectSeparatedPoints: false,
     drawPoints: false,
     legend: 'always',
+    animatedZoom: true,
     labelsSeparateLines: true,
     highlightCircleSize: 4,
     highlightSeriesOpts: {
