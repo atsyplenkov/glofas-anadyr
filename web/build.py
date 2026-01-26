@@ -152,33 +152,38 @@ def main():
                     else:
                         print("Applying DQM correction...")
                         update_date = today.isoformat()
-                        
+
+                        successful_uploads = 0
                         for gauge_id in GAUGE_IDS:
                             if gauge_id in all_raw_data:
                                 raw_df = pd.concat(all_raw_data[gauge_id])
                                 raw_df = raw_df.sort_values("datetime")
                                 raw_df = raw_df.drop_duplicates(subset=["datetime"], keep="last")
-                                
+
                                 print(f"  Processing gauge {gauge_id}: {len(raw_df)} records")
-                                
+
                                 corrected_df = correct_new_data(gauge_id, raw_df)
-                                
+
                                 if not corrected_df.empty:
                                     raw_df["date"] = pd.to_datetime(raw_df["datetime"]).dt.date
                                     raw_df["date"] = pd.to_datetime(raw_df["date"]) - pd.Timedelta(days=1)
-                                    
+
                                     merged_df = raw_df.merge(corrected_df, on="date", how="left")
                                     merged_df["gauge_id"] = gauge_id
                                     merged_df["q_obs"] = None
                                     merged_df = merged_df[["date", "gauge_id", "q_obs", "q_raw", "q_cor"]]
-                                    
+
                                     print(f"  Uploading {len(merged_df)} records for gauge {gauge_id}")
                                     upload_incremental_to_s3(bucket, s3_client, gauge_id, merged_df, update_date)
+                                    successful_uploads += 1
                                 else:
                                     print(f"  Warning: No corrected data for gauge {gauge_id}")
-                        
-                        update_s3_metadata(bucket, s3_client, update_date)
-                        print(f"Updated S3 with new data (update_date={update_date})")
+
+                        if successful_uploads > 0:
+                            update_s3_metadata(bucket, s3_client, update_date)
+                            print(f"Updated S3 with new data (update_date={update_date}, gauges_uploaded={successful_uploads})")
+                        else:
+                            print("Skipping metadata update: no gauges successfully uploaded")
         else:
             print(f"No missing years detected (last data: {last_data_date}, today: {today}, days diff: {days_since_last})")
         
