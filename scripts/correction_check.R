@@ -211,36 +211,48 @@ save_png(
 # ADCP measurements -----------------------------------------------------------
 #fmt: skip
 measured <- tibble::tribble(
-  ~date,      ~adcp,
-  "25-06-21", NA,       
-  "28-06-21", 7415L,    
-  "29-06-21", NA,       
-  "01-07-21", 6163L,    
-  "22-07-22", 1794L,    
-  "23-07-22", NA,       
-  "24-07-22", NA,       
-  "27-07-22", 1152L,    
-  "13-06-24", 5270L,    
-  "17-06-24", NA,       
-  "18-06-24", NA,       
-  "22-06-24", 4608L,    
-  "15-08-24", 1425L,    
-  "20-08-24", NA,       
-  "22-08-24", 986L
-) |>
-  mutate(date = lubridate::as_date(date, format = "%d-%m-%y")) |>
+  ~date,      ~adcp,    ~gauge_id,
+  # SNEZHNOE
+  "25-06-21", NA,       1499L,
+  "28-06-21", 7415L,    1499L,
+  "29-06-21", NA,       1499L,
+  "01-07-21", 6163L,    1499L,
+  "22-07-22", 1794L,    1499L,
+  "23-07-22", NA,       1499L,
+  "24-07-22", NA,       1499L,
+  "27-07-22", 1152L,    1499L,
+  "13-06-24", 5270L,    1499L,
+  "17-06-24", NA,       1499L,
+  "18-06-24", NA,       1499L,
+  "22-06-24", 4608L,    1499L,
+  "15-08-24", 1425L,    1499L,
+  "20-08-24", NA,       1499L,
+  "22-08-24", 986L,     1499L,
+  # VAEGI
+  "23-07-22", 239L,     1504L,
+  # Verkh Mayn
+  # "29-06-21", 699L,     1504L,
+  # "24-07-22", 352L,     1504L,
+  # "17-06-24", 1280L,    1504L,
+  # "18-06-24", 1128L,    1504L,
+  # "20-08-24", 311L,     1504L
+  ) |>
+  mutate(
+    date = lubridate::as_date(date, format = "%d-%m-%y"),
+    gauge_id = as.character(gauge_id)
+  ) |>
   filter(!is.na(adcp))
 
 # Bind together
 cor_meas <-
   measured |>
   left_join(
-    filter(cor_data, gauge_id == 1499),
-    by = join_by(date)
+    filter(cor_data),
+    by = join_by(date, gauge_id)
   ) |>
   left_join(
-    filter(raw_data, gauge_id == 1499),
-    by = join_by(date)
+    filter(raw_data),
+    by = join_by(date, gauge_id)
   )
 
 # Estimate metrics
@@ -285,15 +297,13 @@ adcp_glofas <-
     show.legend = FALSE
   ) +
   geom_point(
-    aes(x = adcp, y = raw, fill = "Raw"),
+    aes(x = adcp, y = raw, fill = "Raw", shape = gauge_id),
     size = 2.5,
-    shape = 21,
     color = "black"
   ) +
   geom_point(
-    aes(x = adcp, y = cor, fill = "Bias-corrected"),
+    aes(x = adcp, y = cor, fill = "Bias-corrected", shape = gauge_id),
     size = 2.5,
-    shape = 21,
     color = "black"
   ) +
   ggpp::geom_table_npc(
@@ -310,6 +320,15 @@ adcp_glofas <-
     values = c("Raw" = mw_red, "Bias-corrected" = mw_blue),
     breaks = c("Raw", "Bias-corrected")
   ) +
+  scale_shape_manual(
+    name = "Gauge",
+    values = c("1499" = 22, "1504" = 24),
+    labels = c("1499" = "Snezhnoe", "1504" = "Vaegi")
+  ) +
+  guides(
+    fill = guide_legend(override.aes = list(shape = 21, size = 3)),
+    shape = guide_legend(override.aes = list(size = 3))
+  ) +
   coord_fixed(xlim = c(0, 8000), ylim = c(0, 8000), expand = FALSE) +
   scale_y_continuous(
     breaks = scales::pretty_breaks(),
@@ -323,6 +342,10 @@ adcp_glofas <-
     x = expression("Observed Q (ADCP), m"^3 * "/s"),
     y = expression("Predicted Q, m"^3 * "/s")
   ) +
-  theme(legend.position = "inside", legend.position.inside = c(0.75, 0.1))
+  theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.75, 0.2),
+    legend.box = "vertical"
+  )
 
 save_png(snakemake@output[["adcp"]], plot = adcp_glofas)
