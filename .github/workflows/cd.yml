@@ -22,12 +22,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Cache Apptainer container
-        uses: actions/cache@v4
-        with:
-          path: container.sif
-          key: container-${{ hashFiles('container.def', 'renv.lock', 'uv.lock') }}
-
       - name: "Set up Python"
         uses: actions/setup-python@v6
         with:
