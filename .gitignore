@@ -13,3 +13,5 @@ web/src/_data/timeseries
 web/src/_data/gauges.json
 
 __pycache__/
+
+CLAUDE.md
