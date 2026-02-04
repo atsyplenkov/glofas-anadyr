@@ -15,6 +15,7 @@ from glofas.io import load_gauge_data_all
 
 load_dotenv()
 
+
 def upload_to_s3(bucket: str, update_date: str):
     """Upload parquet files to S3."""
     s3 = get_s3_client()
@@ -22,7 +23,7 @@ def upload_to_s3(bucket: str, update_date: str):
     for gauge_id in GAUGE_IDS:
         # Load from default local location
         df = load_gauge_data_all(gauge_id)
-        
+
         parquet_path = f"/tmp/{gauge_id}.parquet"
         df.to_parquet(parquet_path, index=False)
 
@@ -36,7 +37,12 @@ def upload_to_s3(bucket: str, update_date: str):
 
 
 def main():
-    required_env = ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "S3_BUCKET", "ENDPOINT_URL"]
+    required_env = [
+        "AWS_ACCESS_KEY_ID",
+        "AWS_SECRET_ACCESS_KEY",
+        "S3_BUCKET",
+        "ENDPOINT_URL",
+    ]
     missing = [v for v in required_env if not os.environ.get(v)]
     if missing:
         raise ValueError(f"Missing environment variables: {', '.join(missing)}")
