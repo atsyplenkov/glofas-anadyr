@@ -1,8 +1,10 @@
 # Variable declarations -------------------------------------------------------
+from datetime import datetime
+
 CONTAINER = "container.sif"
 
-# Get all GLOFAS files dynamically
-YEARS = list(range(1979, 2026))
+# Get all GLOFAS files dynamically (automatically includes current year)
+YEARS = list(range(1979, datetime.now().year + 1))
 GLOFAS_FILES = [f"data/glofas/{year}.nc" for year in YEARS]
 
 # Station IDs
@@ -39,8 +41,7 @@ rule apptainer_build:
         def_file = "container.def",
         lock_file = "renv.lock",
         pyproject = "pyproject.toml",
-        uv_lock = "uv.lock",
-        env_file = ".env"
+        uv_lock = "uv.lock"
     output:
         CONTAINER
     shell:
