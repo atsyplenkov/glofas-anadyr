@@ -102,42 +102,65 @@ def correct_station(station_id, obs_dir, raw_dir, output_dir, n_quantiles, model
         print(f"  Station {station_id}: No raw data available")
         return
     
-    train_obs_da = as_xarray(train_data, "obs", "date")
-    train_sim_da = as_xarray(train_data, "sim", "date")
-    all_sim_da = as_xarray(all_raw_data, "sim", "date")
+    # Add month column for filtering
+    all_raw_data["month"] = pd.to_datetime(all_raw_data["date"]).dt.month
     
-    group = Grouper("time.dayofyear", window=31)
+    # Split data: months 5-9 get DQM correction, others use raw values
+    correction_months = [5, 6, 7, 8, 9]
+    correction_mask = all_raw_data["month"].isin(correction_months)
     
-    try:
-        dqm = DetrendedQuantileMapping.train(
-            train_obs_da,
-            train_sim_da,
-            nquantiles=n_quantiles,
-            group=group,
-            kind="*",
-        )
+    data_to_correct = all_raw_data[correction_mask].copy()
+    data_raw_only = all_raw_data[~correction_mask].copy()
+    
+    epsilon = 0.01
+    
+    # Process months that need correction (May-Sept)
+    if len(data_to_correct) > 0:
+        train_obs_da = as_xarray(train_data, "obs", "date")
+        train_sim_da = as_xarray(train_data, "sim", "date")
+        correct_sim_da = as_xarray(data_to_correct, "sim", "date")
         
-        if models_dir is not None:
-            save_dqm_model(dqm, station_id, models_dir)
+        group = Grouper("time.dayofyear", window=31)
         
-        corrected_da = dqm.adjust(all_sim_da)
-        corrected_values = corrected_da.values
-        
-        epsilon = 0.01
-        corrected_values = corrected_values - epsilon
-        corrected_values = np.maximum(corrected_values, 0.0)
-        
-        result_df = pd.DataFrame({
-            "date": all_raw_data["date"].values,
-            "q_cor": corrected_values
-        })
-        
-        output_file = output_path / f"{station_id}.csv"
-        result_df.to_csv(output_file, index=False)
-        print(f"  Station {station_id}: Saved {len(result_df)} corrected values")
-        
-    except Exception as e:
-        print(f"  Station {station_id}: Error - {e}")
+        try:
+            dqm = DetrendedQuantileMapping.train(
+                train_obs_da,
+                train_sim_da,
+                nquantiles=n_quantiles,
+                group=group,
+                kind="*",
+            )
+            
+            if models_dir is not None:
+                save_dqm_model(dqm, station_id, models_dir)
+            
+            corrected_da = dqm.adjust(correct_sim_da)
+            corrected_values = corrected_da.values - epsilon
+            corrected_values = np.maximum(corrected_values, 0.0)
+            
+            data_to_correct["q_cor"] = corrected_values
+            
+        except Exception as e:
+            print(f"  Station {station_id}: DQM Error - {e}")
+            # Fall back to raw values if DQM fails
+            data_to_correct["q_cor"] = data_to_correct["sim"] - epsilon
+    
+    # For Oct-April: use raw values directly (subtract epsilon that was added)
+    if len(data_raw_only) > 0:
+        data_raw_only["q_cor"] = data_raw_only["sim"] - epsilon
+        data_raw_only["q_cor"] = np.maximum(data_raw_only["q_cor"].values, 0.0)
+    
+    # Combine and sort by date
+    result_df = pd.concat([data_to_correct, data_raw_only], ignore_index=True)
+    result_df = result_df.sort_values("date").reset_index(drop=True)
+    result_df = result_df[["date", "q_cor"]]
+    
+    output_file = output_path / f"{station_id}.csv"
+    result_df.to_csv(output_file, index=False)
+    
+    n_corrected = len(data_to_correct)
+    n_raw = len(data_raw_only)
+    print(f"  Station {station_id}: Saved {len(result_df)} values ({n_corrected} DQM corrected, {n_raw} raw)")
 
 def correct_all_stations(
     stations=None,
