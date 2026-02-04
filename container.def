@@ -9,7 +9,6 @@ From: rocker/geospatial:4.5.1
     renv.lock /renv.lock
     pyproject.toml /pyproject.toml
     uv.lock /uv.lock
-    .env /.env
 
 %environment
     export LC_ALL=C
@@ -31,7 +30,7 @@ From: rocker/geospatial:4.5.1
     
     # Set up R configuration
     # Mind the CRAN repo! You might want to change it to one closer to you.
-    echo "options(repos = c(CRAN = 'https://mirror.truenetwork.ru/CRAN/'), download.file.method = 'libcurl', Ncpus = 4)" > /.Rprofile
+    echo "options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/latest'), download.file.method = 'libcurl', Ncpus = 4)" > /.Rprofile
     echo ".libPaths(c('/renvlib', .libPaths()))" >> /.Rprofile
     
     # Install renv and pak
@@ -53,9 +52,9 @@ From: rocker/geospatial:4.5.1
     # Install curl, ca-certificates, and Noto Sans fonts (excellent Unicode coverage)
     apt-get update && apt-get install -y --no-install-recommends curl ca-certificates fonts-noto-core fonts-noto-extra && rm -rf /var/lib/apt/lists/*
     
-    # Install uv for Python dependency management
+    # Install uv for Python dependency management (pinned version for reproducibility)
     # Use the official installer script (installs to /root/.local/bin)
-    curl -LsSf https://astral.sh/uv/install.sh | sh
+    curl -LsSf https://astral.sh/uv/0.9.0/install.sh | sh
     # Move uv binaries to /usr/local/bin for system-wide access
     mv /root/.local/bin/uv /root/.local/bin/uvx /usr/local/bin/
     chmod +x /usr/local/bin/uv /usr/local/bin/uvx
@@ -66,6 +65,3 @@ From: rocker/geospatial:4.5.1
     cp /pyproject.toml .
     cp /uv.lock .
     uv sync --frozen --no-dev
-    
-    # Copy .env to uvenv directory for easy access
-    cp /.env /uvenv/.env

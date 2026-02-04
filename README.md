@@ -63,9 +63,9 @@ echo "ECMWF_TOKEN=your_api_key" > .env
 ```
    Replace `your_api_key` with your actual Copernicus CDS credentials.
 
-3. Install `miniforge3` and `apptainer` using default params as described in their docs. Then install `snakemake`. Any `snakemake` version will do, but the current template has been tested under `9.14.1`:
+3. Install `miniforge3` and `apptainer` using default params as described in their docs. Then install `snakemake`. The workflow requires snakemake 9.15+:
 ```shell
-conda create -c conda-forge -c bioconda -n snakemake snakemake=9.14.1
+conda create -c conda-forge -c bioconda -n snakemake "snakemake>=9.15"
 ```
 
 4. Activate `snakemake` by running:
@@ -75,7 +75,7 @@ conda activate snakemake
 
 5. Run the workflow with the following command:
 ```shell
-snakemake --use-singularity --cores 1
+snakemake --software-deployment-method apptainer --apptainer-args "--env-file .env" --cores 1
 ```
 
 > [!NOTE]
