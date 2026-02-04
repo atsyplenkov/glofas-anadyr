@@ -1,6 +1,6 @@
 import pickle
 import re
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Dict, Any, Optional
 from pathlib import Path
 
 import geopandas as gpd
@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import hydroeval as he
-from xsdba import DetrendedQuantileMapping, Grouper
+from xsdba import DetrendedQuantileMapping
 
 from .config import MODELS_DIR
 

@@ -1,6 +1,4 @@
-import numpy as np
 import pandas as pd
-import xarray as xr
 from pathlib import Path
 from os.path import dirname
 from xsdba import DetrendedQuantileMapping, Grouper
@@ -90,7 +88,7 @@ def process_station(station_id, obs_dir, sim_dir, output_dir, quantiles_list):
                         "n_train_years": split["n_train_years"]
                     })
                     results.append(dqm_metrics)
-            except Exception as e:
+            except Exception:
                 # print(f"  Error station {station_id} year {test_year} nq={nq}: {e}")
                 continue
     

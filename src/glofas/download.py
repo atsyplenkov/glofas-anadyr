@@ -1,7 +1,7 @@
 import os
 import cdsapi
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 from .config import ANADYR_BBOX
 
 def create_request(hyear: str, area: List[float] = ANADYR_BBOX) -> dict:

@@ -32,7 +32,7 @@ def upload_to_s3(bucket: str, update_date: str):
         os.remove(parquet_path)
 
     update_s3_metadata(bucket, s3, update_date, GAUGE_IDS)
-    print(f"Uploaded metadata.json")
+    print("Uploaded metadata.json")
 
 
 def main():

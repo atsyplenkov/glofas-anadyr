@@ -4,7 +4,6 @@ from multiprocessing import Pool, cpu_count
 
 import geopandas as gpd
 import pandas as pd
-import xarray as xr
 
 # Add src to python path
 PROJECT_ROOT = Path(__file__).parent.parent

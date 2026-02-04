@@ -9,12 +9,11 @@ import sys
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.append(str(PROJECT_ROOT / "src"))
 
-import boto3
 import geopandas as gpd
 import pandas as pd
 from dotenv import load_dotenv
 
-from glofas.config import GAUGE_IDS, GAUGE_INFO, DATA_DIR, ANADYR_BBOX, GEOMETRY_PATH
+from glofas.config import GAUGE_IDS, GAUGE_INFO, DATA_DIR, GEOMETRY_PATH
 from glofas.s3 import (
     get_s3_client, get_last_data_date, upload_incremental_to_s3,
     download_from_s3, update_s3_metadata
@@ -211,7 +210,7 @@ def main():
     gauges_geojson = generate_gauges_json(cv_results, update_date)
     with open(DATA_DIR / "gauges.json", "w") as f:
         json.dump(gauges_geojson, f, indent=2)
-    print(f"Generated gauges.json")
+    print("Generated gauges.json")
     
     timeseries_dir = DATA_DIR / "timeseries"
     timeseries_dir.mkdir(exist_ok=True)
