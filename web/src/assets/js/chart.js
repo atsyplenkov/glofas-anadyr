@@ -42,8 +42,10 @@ async function loadChart() {
 
   new Dygraph(document.getElementById('chart'), data, {
     labels: ['Date', 'Observed', 'Raw GloFAS', 'Corrected'],
-    title: window.gaugeId,
     ylabel: 'Daily water discharge, cms',
+    yLabelWidth: 70,
+    axisLabelWidth: 60,
+    titleHeight: 0,
     showRangeSelector: true,
     // See https://stackoverflow.com/questions/34695490/dygraphs-how-to-use-both-range-selector-and-manual-zooming
     interactionModel: Dygraph.defaultInteractionModel,
@@ -54,6 +56,9 @@ async function loadChart() {
     legend: 'always',
     animatedZoom: true,
     labelsSeparateLines: true,
+    labelsDivStyles: {
+      textAlign: 'left'
+    },
     highlightCircleSize: 4,
     highlightSeriesOpts: {
       strokeWidth: 2.5,
