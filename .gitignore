@@ -2,6 +2,7 @@
 /logs
 /.snakemake
 /.cache
+/.pixi
 out/cyl.csv
 out/paths.txt
 out/plot.png

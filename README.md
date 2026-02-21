@@ -24,7 +24,7 @@ The bias-correction procedure yielded a meaningful improvement in predictive per
 > Estimated changes in median cross-validation metrics across all gauging stations between raw and bias-corrected GloFAS-ERA5 daily streamflow data for the Anadyr River basin. Each point represents the median of 10–17 LOOCV metric estimates for a single station.
 
 ### Project structure
-The `Snakefile` is the backbone of the workflow. It defines the order of the steps and the dependencies between them. The snakemake workflow is designed to be run in a containerized environment using Apptainer. R and Python dependencies are managed using `renv` and `uv`.
+The `Snakefile` is the backbone of the workflow. It defines the order of the steps and the dependencies between them. The snakemake workflow is designed to be run in a containerized environment using Apptainer. Host-side workflow orchestration is managed with `pixi`, while container dependencies are managed with `renv` and `uv`.
 
 ```text
 .
@@ -43,6 +43,8 @@ The `Snakefile` is the backbone of the workflow. It defines the order of the ste
 ├── renv/           # renv internal dir
 ├── renv.lock       # renv file with R deps
 ├── pyproject.toml  # Python project desc
+├── pixi.toml       # Pixi workspace manifest for host launcher environment
+├── pixi.lock       # Pixi lockfile
 ├── uv.lock         # uv file with Python deps
 ├── web/            # directory with scripts for CD workflow
 └── Snakefile       # Snakemake workflow file
@@ -64,19 +66,20 @@ echo "ECMWF_TOKEN=your_api_key" > .env
 ```
    Replace `your_api_key` with your actual Copernicus CDS credentials.
 
-3. Install `miniforge3` and `apptainer` using default params as described in their docs. Then install `snakemake`. The workflow requires snakemake 9.15+:
+3. Install `pixi` and `apptainer` using default params as described in their docs.
 ```shell
-conda create -c conda-forge -c bioconda -n snakemake "snakemake>=9.15"
+curl -fsSL https://pixi.sh/install.sh | sh
+pixi --version
 ```
 
-4. Activate `snakemake` by running:
+4. Install the locked Pixi environment:
 ```shell
-conda activate snakemake
+pixi install --locked
 ```
 
 5. Run the workflow with the following command:
 ```shell
-snakemake --software-deployment-method apptainer --apptainer-args "--env-file .env" --cores 1
+pixi run snakemake --software-deployment-method apptainer --apptainer-args "--env-file .env" --cores 1
 ```
 
 > [!NOTE]
