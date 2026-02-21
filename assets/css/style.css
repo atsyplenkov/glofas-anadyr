@@ -225,6 +225,17 @@ footer {
   border: 1px solid var(--border);
 }
 
+#chart .dygraph-legend,
+#chart .dygraph-axis-label,
+#chart .dygraph-xlabel,
+#chart .dygraph-ylabel {
+  box-sizing: content-box;
+}
+
+#chart .dygraph-legend {
+  padding: 2px 4px;
+}
+
 .download-btn {
   display: inline-block;
   margin-top: 1rem;
