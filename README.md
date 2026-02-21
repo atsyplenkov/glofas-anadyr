@@ -82,5 +82,26 @@ pixi install --locked
 pixi run snakemake --software-deployment-method apptainer --apptainer-args "--env-file .env" --cores 1
 ```
 
+### Build paper outside Snakemake (Quarto + Pixi)
+If you already have up-to-date workflow outputs in `tables/` and `figures/`, you can rebuild only the manuscript without running Snakemake or rebuilding Apptainer:
+
+1. Ensure Pixi environment is installed:
+```shell
+pixi install --locked
+```
+
+2. Render manuscript to `paper/paper.md`:
+```shell
+pixi run quarto render paper/paper.qmd --to markdown --output paper.md --execute
+```
+
+Or use the shortcut task:
+```shell
+pixi run paper
+```
+
+> [!IMPORTANT]
+> `paper/paper.qmd` reads values directly from `tables/tbl2_cv-results.csv` and `tables/tbl3_trends-results.csv`. If these files are stale, regenerate them first (e.g., with the workflow command above).
+
 > [!NOTE]
 > There is no need to use the orchestration, it is anticipated that each step can be run manually. Just follow the order of the steps in `Snakefile` and the dependencies between them. However, some filepaths should be updated.

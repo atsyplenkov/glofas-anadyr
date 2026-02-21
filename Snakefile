@@ -1,10 +1,8 @@
 # Variable declarations -------------------------------------------------------
-from datetime import datetime
-
 CONTAINER = "container.sif"
 
-# Get all GLOFAS files dynamically (automatically includes current year)
-YEARS = list(range(1979, datetime.now().year + 1))
+# Pin GLOFAS period to avoid requiring new-year files during current reruns
+YEARS = list(range(1979, 2026))
 GLOFAS_FILES = [f"data/glofas/{year}.nc" for year in YEARS]
 
 # Station IDs
@@ -54,13 +52,15 @@ rule download_glofas:
     input:
         container = CONTAINER,
         script = "scripts/download_glofas.py"
+    params:
+        year = lambda wildcards: int(wildcards.year)
     singularity:
         CONTAINER
     output:
-        GLOFAS_FILES
+        "data/glofas/{year}.nc"
     shell:
         """
-        python {input.script}
+        python {input.script} --year {params.year}
         """
 
 # Read water discharge data ----------------------------------------------------

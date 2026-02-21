@@ -1,18 +1,19 @@
-from glofas.io import read_station_data_cv
-from glofas.process import loocv_splits, as_xarray, calculate_metrics
-from glofas.config import GAUGE_IDS
-
-import pandas as pd
 from pathlib import Path
 from os.path import dirname
-from xsdba import DetrendedQuantileMapping, Grouper
+import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import warnings
-import sys
+
+import pandas as pd
+from xsdba import DetrendedQuantileMapping, Grouper
 
 # Add src to python path
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.append(str(PROJECT_ROOT / "src"))
+
+from glofas.io import read_station_data_cv
+from glofas.process import loocv_splits, as_xarray, calculate_metrics
+from glofas.config import GAUGE_IDS
 
 
 # Suppress divide by zero warnings in logs
