@@ -1,3 +1,5 @@
+# ruff: noqa: E402
+
 import os
 import json
 import tempfile
@@ -13,7 +15,7 @@ import geopandas as gpd
 import pandas as pd
 from dotenv import load_dotenv
 
-from glofas.config import GAUGE_IDS, GAUGE_INFO, DATA_DIR, GEOMETRY_PATH
+from glofas.config import GAUGE_IDS, GAUGE_INFO, GEOMETRY_PATH
 from glofas.s3 import (
     get_s3_client,
     get_last_data_date,

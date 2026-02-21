@@ -14,4 +14,11 @@ web/src/_data/gauges.json
 
 __pycache__/
 
+# Agents files
 CLAUDE.md
+findings.md
+task_plan.md
+progress.md
+
+# Paper files
+/paper
